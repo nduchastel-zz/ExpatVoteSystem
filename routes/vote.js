@@ -1,5 +1,6 @@
 var mongo = require('mongodb');
 var validator = require('validator');
+var child_process = require('child_process');
 
 var Server = mongo.Server,
     Db = mongo.Db,
@@ -32,6 +33,30 @@ db.open(function(err, db) {
     }
 });
 
+function cmd_spawn(cmd, args, cb_stdout, cb_end) {
+  console.log('starting command: ' + cmd);
+  console.log('arguments are: ' + args);
+  var spawn = require('child_process').spawn,
+    child = spawn(cmd, args),
+    me = this;
+  me.exit = 0;  // Send a cb to set 1 when cmd exits
+  child.stdout.on('data', function (data) { cb_stdout(me, data) });
+  child.stdout.on('end', function () { cb_end(me) });
+}
+
+function cmd_exec(cmd, args, my_out, my_err) {
+   child_process.exec(cmd, args,function(error, stdout, stderr){
+       console.log(stdout);
+       my_out = stdout;
+       my_err = stderr;
+   });
+}
+
+function log_console(cmd) {
+  console.log('cmd is of type ' + typeof cmd);
+  console.log('cmd = ' + cmd);
+  console.log(cmd.stdout);
+}
 
 // create a new voter with public/private keys
 // sample:
@@ -50,8 +75,6 @@ db.open(function(err, db) {
 exports.createKeys = function(req, res) {
     var voter = req.body;
     console.log('Adding voter: ' + JSON.stringify(voter));
-    console.log('voter is ' + typeof voter);
-    console.log('voter is an array or not? ' + Array.isArray(voter));
 
     // look for name
     if (!voter.hasOwnProperty('name')) {
@@ -74,8 +97,33 @@ exports.createKeys = function(req, res) {
        return;
     }
 
-    // genrate key
+    console.log('about to start key gen');
 
+    // genrate key
+    var me = new Object();
+    keygen = new cmd_spawn('./genkey.sh', [voter.name, voter.email],
+      function (me, data) {me.stdout += data.toString();},
+      function (me) {me.exit = 1;}
+    );
+    console.log('me is of type ' + typeof(me));
+    console.log("me keys are '" + Object.keys(me) +"'");
+    Object.keys(me).forEach(function(key) {
+      var val = me[key];
+      console.log("key '" + key + "' is '" + val + "'");
+    });
+
+    console.log('done running');
+
+    console.log("keygen is of type " + typeof keygen);
+    console.log("object keys are '" + Object.keys(keygen) +"'");
+
+
+    Object.keys(keygen).forEach(function(key) {
+      var val = keygen[key];
+      console.log("key '" + key + "' is '" + val + "'");
+    });
+
+    console.log('result is ' + keygen.exit);
 
     db.collection('voters', function(err, collection) {
         collection.insert(voter, {safe:true}, function(err, result) {
