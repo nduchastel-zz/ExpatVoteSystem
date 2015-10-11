@@ -33,29 +33,14 @@ db.open(function(err, db) {
     }
 });
 
-function cmd_spawn(cmd, args, cb_stdout, cb_end) {
-  console.log('starting command: ' + cmd);
-  console.log('arguments are: ' + args);
-  var spawn = require('child_process').spawn,
-    child = spawn(cmd, args),
-    me = this;
-  me.exit = 0;  // Send a cb to set 1 when cmd exits
-  child.stdout.on('data', function (data) { cb_stdout(me, data) });
-  child.stdout.on('end', function () { cb_end(me) });
-}
 
-function cmd_exec(cmd, args, my_out, my_err) {
-   child_process.exec(cmd, args,function(error, stdout, stderr){
-       console.log(stdout);
+function cmd_exec(cmd, my_out, my_err) {
+   console.log("cmd is '" + cmd + "'");
+
+   child_process.exec(cmd, function(error, stdout, stderr){
        my_out = stdout;
        my_err = stderr;
    });
-}
-
-function log_console(cmd) {
-  console.log('cmd is of type ' + typeof cmd);
-  console.log('cmd = ' + cmd);
-  console.log(cmd.stdout);
 }
 
 // create a new voter with public/private keys
@@ -100,30 +85,14 @@ exports.createKeys = function(req, res) {
     console.log('about to start key gen');
 
     // genrate key
-    var me = new Object();
-    keygen = new cmd_spawn('./genkey.sh', [voter.name, voter.email],
-      function (me, data) {me.stdout += data.toString();},
-      function (me) {me.exit = 1;}
-    );
-    console.log('me is of type ' + typeof(me));
-    console.log("me keys are '" + Object.keys(me) +"'");
-    Object.keys(me).forEach(function(key) {
-      var val = me[key];
-      console.log("key '" + key + "' is '" + val + "'");
-    });
+    var myout;
+    var myerr;
+    var cmd = './genkey.sh "' + voter.name + '" ' + voter.email;
+    console.log("about to execute '" + cmd + "'");
+    cmd_exec(cmd , myout, myerr);
 
-    console.log('done running');
-
-    console.log("keygen is of type " + typeof keygen);
-    console.log("object keys are '" + Object.keys(keygen) +"'");
-
-
-    Object.keys(keygen).forEach(function(key) {
-      var val = keygen[key];
-      console.log("key '" + key + "' is '" + val + "'");
-    });
-
-    console.log('result is ' + keygen.exit);
+    console.log('stdout is ' + myout);
+    console.log('stderr is ' + myerr);
 
     db.collection('voters', function(err, collection) {
         collection.insert(voter, {safe:true}, function(err, result) {
