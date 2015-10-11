@@ -34,14 +34,6 @@ db.open(function(err, db) {
 });
 
 
-function cmd_exec(cmd, my_out, my_err) {
-   console.log("cmd is '" + cmd + "'");
-
-   child_process.exec(cmd, function(error, stdout, stderr){
-       my_out = stdout;
-       my_err = stderr;
-   });
-}
 
 // create a new voter with public/private keys
 // sample:
@@ -85,27 +77,32 @@ exports.createKeys = function(req, res) {
     console.log('about to start key gen');
 
     // genrate key
-    var myout;
-    var myerr;
     var cmd = './genkey.sh "' + voter.name + '" ' + voter.email;
     console.log("about to execute '" + cmd + "'");
-    cmd_exec(cmd , myout, myerr);
+    child_process.exec(cmd, function(error, stdout, stderr){
+       if (error != null) {
+          console.log("Execution error '" + error + "'");
+          return;
+       }
 
-    console.log('stdout is ' + myout);
-    console.log('stderr is ' + myerr);
+       console.log(stdout); 
+       console.log(stderr.length);
+       // parse stdout ; split public and private key
 
-    db.collection('voters', function(err, collection) {
-        collection.insert(voter, {safe:true}, function(err, result) {
-            if (err) {
-                res.send({'error':'An error has occurred'});
-                return;
-            }
-            console.log('Success: ' + JSON.stringify(result[0]));
-            console.log('result is ' + result);
-            res.send(result);
-            return;
-        });
+       db.collection('voters', function(err, collection) {
+          collection.insert(voter, {safe:true}, function(err, result) {
+             if (err) {
+                 res.status(500).send({'error':'An error has occurred'});
+                 return;
+             }
+
+             res.send(result);
+             return;
+          });
+       });
     });
+
+
 };
 
 // sample request to certify someone else
