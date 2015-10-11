@@ -1,15 +1,15 @@
-#!/bin/sh
+#!/bin/bash
 
 #
 # Usage genkey.sh firstname lastname email
 #
 FN="$1"
-LN="$2"
-EMAIL="$3"
+EMAIL="$2"
+FN_UNDER=${FN// /_}
 
 # Generate prefix that will be use for keyring filenames
 EMAIL_NO_AT=`echo $EMAIL | sed 's/\@/_at_/'`
-FILE_PREFIX="${FN}_${LN}_${EMAIL_NO_AT}"
+FILE_PREFIX="${FN_UNDER}_${EMAIL_NO_AT}"
 
 # Key validity to use when generating keys
 KEY_VALID="14d"
@@ -30,7 +30,7 @@ gpg --gen-key --batch --no-default-keyring --no-tty - <<EOF
 Key-Type: RSA
 Key-Length: $KEY_SIZE
 Key-Usage: encrypt,sign,auth
-Name-Real: $FN $LN
+Name-Real: $FN
 Name-Email: $EMAIL
 Expire-Date: $KEY_VALID
 %commit
@@ -38,16 +38,16 @@ EOF
 
 # Display public key
 echo
-echo "Public key for $FN $LN <$EMAIL>"
+echo "Public key for $FN <$EMAIL>"
 echo
 gpg --export --armor --no-default-keyring --keyring $PUBRING $EMAIL
 
 # Display secret key
 echo
-echo "Secret key for $FN $LN <$EMAIL>"
+echo "Secret key for $FN <$EMAIL>"
 echo
 gpg --export-secret-keys --armor --no-default-keyring --secret-keyring $SECRING $EMAIL
 
 # Remove keyring files
-rm -f $PUBRING $SECRING
+#rm -f $PUBRING $SECRING
 
