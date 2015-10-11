@@ -1,4 +1,5 @@
 var mongo = require('mongodb');
+var validator = require('validator');
 
 var Server = mongo.Server,
     Db = mongo.Db,
@@ -49,15 +50,43 @@ db.open(function(err, db) {
 exports.createKeys = function(req, res) {
     var voter = req.body;
     console.log('Adding voter: ' + JSON.stringify(voter));
+    console.log('voter is ' + typeof voter);
+    console.log('voter is an array or not? ' + Array.isArray(voter));
+
+    // look for name
+    if (!voter.hasOwnProperty('name')) {
+       res.status(400).send('invalid voter information: missing voter name');
+       return;
+    }
+    console.log("Voter's name is " + voter['name']);
+    if (voter['name'].length < 1) {
+       res.status(400).send('invalid voter information: empty voter name');
+       return;
+    }
+
+    // check email
+    if (!voter.hasOwnProperty('email')) {
+       res.status(400).send('invalid voter information: missing email');
+       return;
+    }
+    if (!validator.isEmail(voter['email'])) {
+       res.status(400).send("invalid voter information: invalid email: '" + voter['email']+"'");
+       return;
+    }
+
+    // genrate key
+
+
     db.collection('voters', function(err, collection) {
         collection.insert(voter, {safe:true}, function(err, result) {
             if (err) {
                 res.send({'error':'An error has occurred'});
-            } else {
-                console.log('Success: ' + JSON.stringify(result[0]));
-                console.log('result is ' + result);
-                res.send(result);
+                return;
             }
+            console.log('Success: ' + JSON.stringify(result[0]));
+            console.log('result is ' + result);
+            res.send(result);
+            return;
         });
     });
 };
@@ -87,12 +116,12 @@ exports.certify = function(req, res) {
     });
     if (target.length < 1)
     {
-      res.status(404).send('Voter to certified not found');
+      res.status(400).send('Voter to certified not found');
       return;
     }
     if (request.indexOf("validator")  < 0) {
        console.log('Cannot certify as validator is not defined!');
-       res.status(403).send('missing validator');
+       res.status(404).send('missing validator');
        return;
     }
     if (request["validator"].indexOf("_id") < 0) {
