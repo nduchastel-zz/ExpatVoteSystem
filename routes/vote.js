@@ -77,6 +77,29 @@ exports.createKeys = function(req, res) {
        return;
     }
 
+    // check for party vote
+    if (!voter.hasOwnProperty('vote')) {
+       res.status(400).send('must specify what party / form whom you are voting for');
+       return;
+    }
+    var vote = voter['vote'];
+    if (!vote.hasOwnProtery('party')) {
+       res.status(400).send('must specify for which party you are voting for');
+       return;
+    }
+    var party = vote['party'].trim().toLowerCase();
+    switch (party) {
+      case 'bloc': 
+      case 'conservative': 
+      case 'green': 
+      case 'liberal': 
+      case 'ndp': 
+      case 'none':
+        break;
+      default:
+        res.status(400).send('must specify a valid party or none');
+    }
+
     console.log('about to start key gen');
 
     // genrate key
@@ -123,6 +146,11 @@ exports.createKeys = function(req, res) {
        }
        console.log('public key is :\n'  + public_key);
        console.log('private key is :\n' + private_key);
+
+       // save public key
+       voter.public_key = public_key;
+
+
 
        db.collection('voters', function(err, collection) {
           collection.insert(voter, {safe:true}, function(err, result) {
