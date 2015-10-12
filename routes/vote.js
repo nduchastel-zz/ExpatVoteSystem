@@ -47,6 +47,9 @@ db.open(function(err, db) {
 //          "city": "Woodinville",                                 -- any set of fields
 //          "state" : "Washington",
 //          "country" : "USA"
+//      },
+//      "vote": {
+//        "party": "ndp" 
 //      }
 //   }
 exports.createKeys = function(req, res) {
@@ -85,9 +88,41 @@ exports.createKeys = function(req, res) {
           return;
        }
 
-       console.log(stdout); 
-       console.log(stderr.length);
        // parse stdout ; split public and private key
+       var lines = stdout.match(/^.*([\n\r]+|$)/gm);
+       console.log('number of lines is ' + lines.length);
+       var stage = 0;
+       var public_key = "";
+       var private_key = "";
+       for (var i = 0; i<lines.length; i++) {
+          var str = lines[i];
+          if (str.substr(0,5) == '-----') {
+             stage++;
+          }
+          switch (stage) {
+            case 0: // before --BEGIN PGP PUBLIC...
+              break;
+            case 1: // inside PGP Public
+              public_key += str;
+              break;
+            case 2: // between PUBLIC and PRIVATE keys
+              if (str.substr(0,8) == '-----END') {
+                public_key += str;
+              }
+              break;
+            case 3: // inside PGP Private
+              private_key += str;
+              break;
+            case 4:
+              if (str.substr(0,8) == '-----END') {
+                private_key += str;
+              }
+            default:
+              break;
+          }
+       }
+       console.log('public key is :\n'  + public_key);
+       console.log('private key is :\n' + private_key);
 
        db.collection('voters', function(err, collection) {
           collection.insert(voter, {safe:true}, function(err, result) {
