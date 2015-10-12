@@ -2,6 +2,9 @@ var mongo = require('mongodb');
 var validator = require('validator');
 var child_process = require('child_process');
 
+var ursa = require('ursa');
+var fs = require('fs');
+
 var Server = mongo.Server,
     Db = mongo.Db,
     BSON = mongo.BSONPure;
@@ -83,7 +86,7 @@ exports.createKeys = function(req, res) {
        return;
     }
     var vote = voter['vote'];
-    if (!vote.hasOwnProtery('party')) {
+    if (!vote.hasOwnProperty('party')) {
        res.status(400).send('must specify for which party you are voting for');
        return;
     }
@@ -103,65 +106,41 @@ exports.createKeys = function(req, res) {
     console.log('about to start key gen');
 
     // genrate key
-    var cmd = './genkey.sh "' + voter.name + '" ' + voter.email;
-    console.log("about to execute '" + cmd + "'");
-    child_process.exec(cmd, function(error, stdout, stderr){
-       if (error != null) {
-          console.log("Execution error '" + error + "'");
+    var keys = ursa.generatePrivateKey(1024);
+    var privPem = keys.toPrivatePem('base64');
+    var pubPem = keys.toPublicPem('base64');
+    var priv = ursa.createPrivateKey(privPem, '', 'base64');
+    var pub = ursa.createPublicKey(pubPem, 'base64');
+
+    console.log("public key pem ='" + pubPem + "'");
+    console.log("private key pem ='" + privPem + "'");
+
+    // encrypt vote
+    var encrypted_vote = priv.privateEncrypt(party, 'utf8', 'base64');
+    console.log("encrypted message = '" + encrypted_vote + "'");
+
+    // save public key
+    voter.public_key = pubPem;
+    voter.encrypted_vote = encrypted_vote;
+
+    // check decrypted
+    var check = pub.publicDecrypt(voter.encrypted_vote, 'base64', 'utf8');
+
+    db.collection('voters', function(err, collection) {
+       collection.insert(voter, {safe:true}, function(err, result) {
+          if (err) {
+              res.status(500).send({'error':'An error has occurred'});
+              return;
+          }
+
+          result.public_key = pubPem;
+          result.private_key = privPem;
+          result.check_vote = check;
+
+          console.log("ID for '" + voter['name'] + "' is '" + result.insertedIds[0] + "'");
+
+          res.send(result);
           return;
-       }
-
-       // parse stdout ; split public and private key
-       var lines = stdout.match(/^.*([\n\r]+|$)/gm);
-       console.log('number of lines is ' + lines.length);
-       var stage = 0;
-       var public_key = "";
-       var private_key = "";
-       for (var i = 0; i<lines.length; i++) {
-          var str = lines[i];
-          if (str.substr(0,5) == '-----') {
-             stage++;
-          }
-          switch (stage) {
-            case 0: // before --BEGIN PGP PUBLIC...
-              break;
-            case 1: // inside PGP Public
-              public_key += str;
-              break;
-            case 2: // between PUBLIC and PRIVATE keys
-              if (str.substr(0,8) == '-----END') {
-                public_key += str;
-              }
-              break;
-            case 3: // inside PGP Private
-              private_key += str;
-              break;
-            case 4:
-              if (str.substr(0,8) == '-----END') {
-                private_key += str;
-              }
-            default:
-              break;
-          }
-       }
-       console.log('public key is :\n'  + public_key);
-       console.log('private key is :\n' + private_key);
-
-       // save public key
-       voter.public_key = public_key;
-
-
-
-       db.collection('voters', function(err, collection) {
-          collection.insert(voter, {safe:true}, function(err, result) {
-             if (err) {
-                 res.status(500).send({'error':'An error has occurred'});
-                 return;
-             }
-
-             res.send(result);
-             return;
-          });
        });
     });
 
