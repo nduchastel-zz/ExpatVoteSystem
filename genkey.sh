@@ -15,7 +15,7 @@ FILE_PREFIX="${FN_UNDER}_${EMAIL_NO_AT}"
 KEY_VALID="14d"
 
 # Key size to use when creating keys
-KEY_SIZE=2048
+KEY_SIZE=1024
 
 # Keyring file names
 PUBRING="./${FILE_PREFIX}_pub.gpg"
@@ -49,5 +49,5 @@ echo
 gpg --export-secret-keys --armor --no-default-keyring --secret-keyring $SECRING $EMAIL
 
 # Remove keyring files
-#rm -f $PUBRING $SECRING
+rm -f $PUBRING $SECRING
 

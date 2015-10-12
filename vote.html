@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <script>
+    $("#provincee").bind("change", function(e){
+      $.getJSON("http://192.169.165.95/lokup.php?province=" + $("#province").val(),
+            function(data){
+              $.each(data, function(i,item){
+                if (item.field == "first_name") {
+                  $("#first_name").val(item.value);
+                } else if (item.field == "last_name") {
+                  $("#last_name").val(item.value);
+                }
+              });
+            });
+    });
+
+  </script>
+
+</head>
+
+<body>
+
+<h1>Canadian Expat Voting System</h1>
+
+<p>The goal of this page is to 'simulate' an electronic voting system.
+<p>For now, this only focuses on Canadian citizens living outside of Canada (because, as of now, all 1.4 million of us who have lived more than 5 years outside of Canada are being denied to vote).
+<p>This is <b>not</b> a formal Elections Canada web site; and is <b>in no way</b> an official vote. It is only meant to:
+<ol>
+<li>protest the fact that we are being denied our right to vote; and,</li>
+<li>show that this could be done (see notes below).</li>
+</ol>
+
+<br>
+
+<p>Please inpput data below; and vote. More instructions will follow.
+
+<br>
+<form>
+  <fieldset>
+    <legend>Personal information:</legend>
+      Full name:<br>
+      <input type="text" name="fullname">
+      <br>
+      Email:<br>
+      <input type="text" name="email">
+      <br>
+      Facebook:<br>
+      <input type="text" name="facebook">
+      <br>
+      Twitter:<br>
+      <input type="text" name="twitter">
+    </fieldset>
+    <br>
+    <br>
+    <fieldset>
+      <legend>Vote</legend>
+      Party:<br>
+      <select name="party">
+        <option value="none">None of the Above</option>
+        <option value="cpc">Conservative</option>
+        <option value="green">Green</option>
+        <option value="lib">Liberal</option>
+        <option value="ndp">NDP</option>
+      </select>
+      <br>
+      Province:<br>
+      <input list="province" id="province">
+      <datalist id="province">
+        <option value="Never lived in Canada" />
+        <option value="Alberta"/>
+        <option value="British Columbia"/>
+        <option value="Manitoba"/>
+        <option value="New Brunswick"/>
+        <option value="Newfundland"/>
+        <option value="Nova Scotia"/>
+        <option value="Ontario"/>
+        <option value="Prince Edward Island"/>
+        <option value="Qu&eacute;bec"/>
+        <option value="Saskatchewan"/>
+        <option value="Northwest Terrotories"/option>
+        <option value="Nunavut"/option>
+        <option value="Yukon"/option>
+      </datalist> 
+      Riding:
+      <select name="riding">
+        <option value="none">None</option>
+      </select>
+      Candidate:
+      <select name="candidate">
+        <option value="none">None</option>
+      </select>
+    </fieldset>
+</form>
+
+</body>
+</html>
+
+
+<input type="text" name="email" id="email" />
+<input type="text" name="first_name" id="first_name" />
+<input type="text" name="last_name" id="last_name" />
+
