@@ -66,27 +66,27 @@
 
   <div class="input">
 
-    <form id="info" method="post">
+    <form id="info">
       <fieldset class="personal">
         <legend>Personal information:</legend>
           Full name:<br>
-          <input type="text" name="fullname" maxlength="50" size="50" required placeholder="full legal name">
+          <input type="text" name="fullname" id="fullname" maxlength="50" size="50" required placeholder="full legal name">
           <br>
           Email:<br>
-          <input type="email" name="email" maxlength="50" size="50" required placeholder="valid unique email address">
+          <input type="email" name="email" id="email" maxlength="50" size="50" required placeholder="valid unique email address">
           <br>
           Facebook:<br>
-          <input type="text" name="facebook" maxlength="50" size="50" placeholder="omit 'https://www.facebook/com' part">
+          <input type="text" name="facebook" id="facebook" maxlength="50" size="50" placeholder="omit 'https://www.facebook/com' part">
           <br>
           Twitter:<br>
-          <input type="text" name="twitter" maxlength="50" size="50" placeholder="omit 'http://www.twitter.com' part">
+          <input type="text" name="twitter" id="twitter" maxlength="50" size="50" placeholder="omit 'http://www.twitter.com' part">
         </fieldset>
         <br>
         <br>
         <fieldset class="vote">
           <legend>Vote</legend>
           Party:<br>
-          <select name="party">
+          <select name="party" id="party">
             <option value="none">None of the Above</option>
             <option value="cpc">Conservative</option>
             <option value="green">Green</option>
@@ -95,8 +95,8 @@
           </select>
           <br>
         </fieldset>
-        <input type="submit" value="Vote">
     </form>
+    <button name="Submit" id="submit">Submit</button>
   </div>
 
   <div class="output">
@@ -110,29 +110,33 @@
 
   <script>
 
-    $('form#info').submit(function(event) {
+    $(document).ready(function() {
+      $('#submit').click(function() {
         var $form = $( this );
         var voterinfo = {
-            'name': $form.find('#fullname').value,
-            'email': $form.find('#email').value,
-            'facebook': $form.find('#facebook').value,
-            'twitter': $form.find('#switter').value,
+            'name': $('#fullname').val(),
+            'email': $('#email').val(),
+            'facebook': $('#facebook').val(),
+            'twitter': $('#switter').val(),
             'vote' : {
-                'party': $form.find('#party').value
+                'party': $('#party').val()
             }
         };
         $.ajax({
             type: 'POST',
-            url: 'https://www.expatvote.ca:3001/voter',
+            url: 'http://expatvote.ca:3001/voter',
             dataType: 'jsonp',
             async: false,
             data: voterinfo,
             success: function (resultdata) {
                 console.log(resultdata);
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown) {
+               console.log("error");
             }
         });
-        return suppress(event);
       });
+    });
 
   </script>
 
