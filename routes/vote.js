@@ -2,6 +2,8 @@ var mongo = require('mongodb');
 var validator = require('validator');
 var child_process = require('child_process');
 
+
+
 var ursa = require('ursa');
 var fs = require('fs');
 
@@ -55,7 +57,7 @@ db.open(function(err, db) {
 //        "party": "ndp" 
 //      }
 //   }
-exports.createKeys = function(req, res) {
+exports.createKeysAndVote = function(req, res) {
     var voter = req.body;
     console.log('Adding voter: ' + JSON.stringify(voter));
 
@@ -79,71 +81,89 @@ exports.createKeys = function(req, res) {
        res.status(400).send("invalid voter information: invalid email: '" + voter['email']+"'");
        return;
     }
-
-    // check for party vote
-    if (!voter.hasOwnProperty('vote')) {
-       res.status(400).send('must specify what party / form whom you are voting for');
-       return;
-    }
-    var vote = voter['vote'];
-    if (!vote.hasOwnProperty('party')) {
-       res.status(400).send('must specify for which party you are voting for');
-       return;
-    }
-    var party = vote['party'].trim().toLowerCase();
-    switch (party) {
-      case 'bloc': 
-      case 'conservative': 
-      case 'green': 
-      case 'liberal': 
-      case 'ndp': 
-      case 'none':
-        break;
-      default:
-        res.status(400).send('must specify a valid party or none');
-    }
-
-    console.log('about to start key gen');
-
-    // genrate key
-    var keys = ursa.generatePrivateKey(1024);
-    var privPem = keys.toPrivatePem('base64');
-    var pubPem = keys.toPublicPem('base64');
-    var priv = ursa.createPrivateKey(privPem, '', 'base64');
-    var pub = ursa.createPublicKey(pubPem, 'base64');
-
-    console.log("public key pem ='" + pubPem + "'");
-    console.log("private key pem ='" + privPem + "'");
-
-    // encrypt vote
-    var encrypted_vote = priv.privateEncrypt(party, 'utf8', 'base64');
-    console.log("encrypted message = '" + encrypted_vote + "'");
-
-    // save public key
-    voter.public_key = pubPem;
-    voter.encrypted_vote = encrypted_vote;
-
-    // check decrypted
-    var check = pub.publicDecrypt(voter.encrypted_vote, 'base64', 'utf8');
-
+    console.log("looking for email '" + voter.email + "'");
     db.collection('voters', function(err, collection) {
-       collection.insert(voter, {safe:true}, function(err, result) {
-          if (err) {
-              res.status(500).send({'error':'An error has occurred'});
-              return;
+        collection.findOne({'email': voter.email}, function(err, item) {
+          console.log(item);
+          if (item) {
+             res.status(403).send("voter already exist for email '" + voter.email + "'; id = '" + item._id + "'");
+             return;
           }
 
-          result.public_key = pubPem;
-          result.private_key = privPem;
-          result.check_vote = check;
 
-          console.log("ID for '" + voter['name'] + "' is '" + result.insertedIds[0] + "'");
+          // check for party vote
+          if (!voter.hasOwnProperty('vote')) {
+             res.status(400).send('must specify what party / form whom you are voting for');
+             return;
+          }
+          var vote = voter['vote'];
+          if (!vote.hasOwnProperty('party')) {
+             res.status(400).send('must specify for which party you are voting for');
+             return;
+          }
+          var party = vote['party'].trim().toLowerCase();
+          switch (party) {
+            case 'bloc': 
+            case 'conservative': 
+            case 'green': 
+            case 'liberal': 
+            case 'ndp': 
+            case 'none':
+              break;
+            default:
+              res.status(400).send('must specify a valid party or none');
+          }
 
-          res.send(result);
-          return;
-       });
+          console.log('about to start key gen');
+
+          // genrate keys
+          var keys = ursa.generatePrivateKey(1024);
+          var privPem = keys.toPrivatePem('base64');
+          var pubPem = keys.toPublicPem('base64');
+          var priv = ursa.createPrivateKey(privPem, '', 'base64');
+          var pub = ursa.createPublicKey(pubPem, 'base64');
+
+          console.log("public key pem ='" + pubPem + "'");
+          console.log("private key pem ='" + privPem + "'");
+
+          // encrypt vote
+          var encrypted_vote = priv.privateEncrypt(party, 'utf8', 'base64');
+          console.log("encrypted message = '" + encrypted_vote + "'");
+
+          // save public key (for DB)
+          voter.public_key = pubPem;
+          voter.encrypted_vote = encrypted_vote;
+
+          // check decrypted
+          var check = pub.publicDecrypt(voter.encrypted_vote, 'base64', 'utf8');
+
+          // remove vote from object to store in DB.
+          delete voter['vote'];
+
+          console.log('after delete \n' + JSON.stringify(voter));
+
+          // write to DB
+          db.collection('voters', function(err, collection) {
+             collection.insert(voter, {safe:true}, function(err, result) {
+                if (err) {
+                    res.status(500).send({'error':'An error has occurred'});
+                    return;
+                }
+      
+                // set values to return back to caller.
+                result.public_key = pubPem;
+                result.private_key = privPem;
+                result.check_vote = check;
+
+                console.log("ID for '" + voter['name'] + "' is '" + result.insertedIds[0] + "'");
+
+                res.send(result);
+                return;
+             });
+          });
+
+        });
     });
-
 
 };
 
@@ -293,4 +313,17 @@ var populateLinks = function() {
     });
 };
 
+
+
+exports.fetchVoter = function(req, res) {
+    var id = req.params.id;
+    var obj_id = new require('mongodb').ObjectID(req.params.id);
+    console.log("Retrieving voter: '" + id + "'");
+    db.collection('voters', function(err, collection) {
+        collection.findOne({'_id': obj_id}, function(err, item) {
+            delete item.encrypted_vote;
+            res.send(item);
+        });
+    });
+};
 
