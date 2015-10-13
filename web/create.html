@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Canadian Expat Voting System</title>
+
+<meta name="DESCRIPTION" content="Secure authenticated system to enable Canadian citizens living outside the country be able to vote in #elxn42">
+<meta name="KEYWORD" content="vote expat canada canadian elxn42 stephen harper justin trudeau tom mulclair elizabeth may">
+
+<script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.6.2.min.js"></script>
+
+<style>
+.header-cont {
+    width: 100%;
+    /**position: fixed;**/
+    top: 0px;
+    z-index: 999;
+}
+.header {
+    height: 140px;
+    background: #F0F0F0;
+    border: 3px solid #8B2942;
+    width: 960px;
+    margin: 0px auto;
+    text-align: center;
+    font-size: large;
+}
+.input {
+    width: 960px;
+    background: #F0F0F0;
+    border: 3px solid #8B2942;
+    height: 270px;
+    margin: 20px auto;
+    font-size: large;
+}
+.output {
+    width: 960px;
+    background: #F0F0F0;
+    border: 3px solid #8B2942;
+    height: 400px;
+    margin: 20px auto;
+}
+.personal {
+    width: 400px;
+    float: left;
+    margin: 20px;
+}
+.vote {
+    width: 400px;
+    float: left;
+    margin: 20px;
+}
+</style>
+
+</head>
+
+<body>
+
+  <div class="header-cont">
+    <div class="header">
+      <h1>Every Canadian has the right to vote; even expats</h1>
+      <p>This web application is a prototype of an internet voting system. This will be used for the 2015 to conduct an un-official vote (poll).
+    </div>
+  </div>
+
+  <div class="input">
+
+    <form id="info" method="post">
+      <fieldset class="personal">
+        <legend>Personal information:</legend>
+          Full name:<br>
+          <input type="text" name="fullname" maxlength="50" size="50" required placeholder="full legal name">
+          <br>
+          Email:<br>
+          <input type="email" name="email" maxlength="50" size="50" required placeholder="valid unique email address">
+          <br>
+          Facebook:<br>
+          <input type="text" name="facebook" maxlength="50" size="50" placeholder="omit 'https://www.facebook/com' part">
+          <br>
+          Twitter:<br>
+          <input type="text" name="twitter" maxlength="50" size="50" placeholder="omit 'http://www.twitter.com' part">
+        </fieldset>
+        <br>
+        <br>
+        <fieldset class="vote">
+          <legend>Vote</legend>
+          Party:<br>
+          <select name="party">
+            <option value="none">None of the Above</option>
+            <option value="cpc">Conservative</option>
+            <option value="green">Green</option>
+            <option value="lib">Liberal</option>
+            <option value="ndp">NDP</option>
+          </select>
+          <br>
+        </fieldset>
+        <input type="submit" value="Vote">
+    </form>
+  </div>
+
+  <div class="output">
+    <div id="public_key">
+    </div>
+    <div id="private_key">
+    </div>
+    <div id="evote">
+    </div>
+  </div>
+
+  <script>
+
+    $('form#info').submit(function(event) {
+        var $form = $( this );
+        var voterinfo = {
+            'name': $form.find('#fullname').value,
+            'email': $form.find('#email').value,
+            'facebook': $form.find('#facebook').value,
+            'twitter': $form.find('#switter').value,
+            'vote' : {
+                'party': $form.find('#party').value
+            }
+        };
+        $.ajax({
+            type: 'POST',
+            url: 'https://www.expatvote.ca:3001/voter',
+            dataType: 'jsonp',
+            async: false,
+            data: voterinfo,
+            success: function (resultdata) {
+                console.log(resultdata);
+            }
+        });
+        return suppress(event);
+      });
+
+  </script>
+
+</body>
+
+</html>
