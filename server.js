@@ -8,9 +8,9 @@ app.configure(function () {
     app.use(express.bodyParser());
 });
 
-app.post('/voter', vote.createKeys);
+app.post('/voter', vote.createKeysAndVote);
 app.post('/voter/:id/certify', vote.certify);
-//app.post('/voter/:id/vote', vote.vote);
+app.get('/voter/:id', vote.fetchVoter);
 
 app.listen(3001);
 console.log('Listening on port 3001...');
