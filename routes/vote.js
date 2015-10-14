@@ -63,29 +63,34 @@ exports.createKeysAndVote = function(req, res) {
 
     // look for name
     if (!voter.hasOwnProperty('name')) {
+       console.log('invalid voter information: missing voter name');
        res.status(400).send('invalid voter information: missing voter name');
        return;
     }
     console.log("Voter's name is " + voter['name']);
     if (voter['name'].length < 1) {
+       console.log('invalid voter information: empty voter name');
        res.status(400).send('invalid voter information: empty voter name');
        return;
     }
 
     // check email
     if (!voter.hasOwnProperty('email')) {
+       console.log('invalid voter information: missing email');
        res.status(400).send('invalid voter information: missing email');
        return;
     }
     if (!validator.isEmail(voter['email'])) {
+       console.log("invalid voter information: invalid email: '" + voter['email']+"'");
        res.status(400).send("invalid voter information: invalid email: '" + voter['email']+"'");
        return;
     }
     console.log("looking for email '" + voter.email + "'");
     db.collection('voters', function(err, collection) {
         collection.findOne({'email': voter.email}, function(err, item) {
-          console.log(item);
           if (item) {
+             console.log("already found item is '" + item + "'");
+             console.log("voter already exist for email '" + voter.email + "'; id = '" + item._id + "'");
              res.status(403).send("voter already exist for email '" + voter.email + "'; id = '" + item._id + "'");
              return;
           }
@@ -93,11 +98,13 @@ exports.createKeysAndVote = function(req, res) {
 
           // check for party vote
           if (!voter.hasOwnProperty('vote')) {
+             console.log('must specify what party / form whom you are voting for');
              res.status(400).send('must specify what party / form whom you are voting for');
              return;
           }
           var vote = voter['vote'];
           if (!vote.hasOwnProperty('party')) {
+             console.log('must specify for which party you are voting for');
              res.status(400).send('must specify for which party you are voting for');
              return;
           }
@@ -111,7 +118,9 @@ exports.createKeysAndVote = function(req, res) {
             case 'none':
               break;
             default:
+              console.log('must specify a valid party or none');
               res.status(400).send('must specify a valid party or none');
+              return;
           }
 
           console.log('about to start key gen');
@@ -146,6 +155,7 @@ exports.createKeysAndVote = function(req, res) {
           db.collection('voters', function(err, collection) {
              collection.insert(voter, {safe:true}, function(err, result) {
                 if (err) {
+                    console.log({'error':'An error has occurred'});
                     res.status(500).send({'error':'An error has occurred'});
                     return;
                 }
@@ -251,12 +261,8 @@ var populateVoters = function() {
         email: "nduchast@hotmail.com",
         facebook: "facebook.com/nicolas.duchasteldemontrouge",
         twitter: "@nduchast",
-        last_riding: "Hull--Aylmer",
-        current_location: {
-           city: "Woodinville",
-           state: "Washington",
-           country: "USA"
-        }
+        certified: yes,
+        master: yes
     },
     {
 	_id: "2",
@@ -264,12 +270,8 @@ var populateVoters = function() {
         email: "gill.a.frank@gmail.com",
         facebook: "facebook.com/gill.frank",
         twitter: "@1gillianfrank1",
-        last_riding: "Toronto--Danforth",
-        current_location: {
-           city: "Itacha",
-           state: "New York",
-           country: "USA"
-        }
+        certified: yes,
+        master: yes
     }];
 
     db.collection('voters', function(err, collection) {
