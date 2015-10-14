@@ -9,6 +9,28 @@
 <meta name="KEYWORD" content="vote expat canada canadian elxn42 stephen harper justin trudeau tom mulclair elizabeth may">
 
 <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.6.2.min.js"></script>
+<script>
+function setCookie(cname,cvalue,exdays) {
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    var expires = "expires=" + d.toGMTString();
+    document.cookie = cname+"="+cvalue+"; "+expires;
+}
+
+function getCookie(cname) {
+    var name = cname + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0; i<ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1);
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}
+
+</script>
 
 <style>
 .header-cont {
@@ -38,8 +60,17 @@
     width: 960px;
     background: #F0F0F0;
     border: 3px solid #8B2942;
-    height: 400px;
+    height: 600px;
     margin: 20px auto;
+}
+.results {
+    width: 900px;
+    padding-left: 20px;
+}
+.results p {
+    padding-left: 30px;
+    font-size: x-small;
+    word-wrap: break-word;
 }
 .personal {
     width: 400px;
@@ -47,7 +78,7 @@
     margin: 20px;
 }
 .vote {
-    width: 400px;
+    width: 200px;
     float: left;
     margin: 20px;
 }
@@ -88,29 +119,73 @@
           Party:<br>
           <select name="party" id="party">
             <option value="none">None of the Above</option>
-            <option value="cpc">Conservative</option>
+            <option value="conservative">Conservative</option>
             <option value="green">Green</option>
-            <option value="lib">Liberal</option>
+            <option value="liberal">Liberal</option>
             <option value="ndp">NDP</option>
           </select>
           <br>
         </fieldset>
     </form>
+    <br>
+    <p>
     <button name="Submit" id="submit">Submit</button>
+    <button name="Clear" id="clear" style="display: none;">Clear Cookies</button>
   </div>
 
   <div class="output">
-    <div id="public_key">
-    </div>
-    <div id="private_key">
-    </div>
-    <div id="evote">
+    <div class="results">
+      <div>
+        <h3>Public Key</h3>
+        <p id="public_key"></p>
+      </div>
+      <br>
+
+      <div>
+         <h3>Private Key</h3>
+         <p id="private_key"> </p>
+      </div>
+      <br>
+      <p style="font-size: medium">Make sure to keep track of your public and private keys (e.g. cut+paste them into a text file).
+
+      <div>
+         <h3>Your Vote, Encrypted</h3>
+         <p id="evote"></p>
+      </div>
     </div>
   </div>
 
   <script>
 
     $(document).ready(function() {
+
+      var user_id = getCookie("user_id");
+      if (user_id != "") {
+         $.get("/voter/" + user_id, function(data) {
+            var empty = " ";
+            console.log("get for " + user_id + " is " + data);
+            document.getElementById('fullname').value = data.name;
+            document.getElementById('email').value = data.email;
+            document.getElementById('facebook').value = (data.facebook == undefined ? empty : data.facebook + empty);
+            document.getElementById('twitter').value = (data.twitter == undefined ? empty : data.twitter + empty);
+            var option = document.createElement("option");  option.text ="HIDDEN";
+            $('#party').add(option);
+            document.getElementById('public_key').innerHTML = data.public_key;
+            document.getElementById('private_key').innerHTML = getCookie("private_key");
+            document.getElementById('evote').innerHTML = "<hidden>";
+            $('#fullname').prop("disabled", true);
+            $('#email').prop("disabled", true);
+            $('#facebook').prop("disabled", true);
+            $('#twitter').prop("disabled", true);
+            $('#party').prop("disabled", true);
+            $('#submit').prop( "disabled", true );
+            document.getElementById('clear').style.display = "inline";
+         });
+      }
+
+      $.ajaxSetup({
+         contentType: "application/json; charset=utf-8"
+      });
       $('#submit').click(function() {
 
         var voterinfo = {
@@ -122,27 +197,43 @@
                 'party': $('#party').val()
             }
         };
-        var jqxhr = $.ajax({
-            type: "POST",
-            url: "/voter",
-            data: voterinfo,
-            success: function() {
-               alert( "success" );
-            },
-            dataType: "json"
-        })
-        .done(function() {
-            alert( "second success" );
-        })
-        .fail(function() {
-            alert( "error" );
-        })
-        .always(function() {
-            alert( "finished" );
-        });
-
-
+        var json = JSON.stringify(voterinfo);
+        console.log("json stuff = '" + json + "'");
+        $.post( "/voter",
+                json,
+                function( data ) {
+                   console.log( data);
+                   document.getElementById('public_key').innerHTML = data.public_key;
+                   document.getElementById('private_key').innerHTML = data.private_key;
+                   document.getElementById('evote').innerHTML = data.check_vote;
+                   setCookie("user_id", data.insertedIds[0], 30);
+                   setCookie("private_key", data.private_key, 30);
+                   $('#fullname').prop("disabled", true);
+                   $('#email').prop("disabled", true);
+                   $('#facebook').prop("disabled", true);
+                   $('#twitter').prop("disabled", true);
+                   $('#party').prop("disabled", true);
+                   $('#submit').prop( "disabled", true );
+                   document.getElementById('clear').style.display = "inline";
+                }, "json")
+        .fail(function( jqXHR, textStatus, errorThrown ) {
+            alert("Error processing REST request: '" + textStatus + "'");
+          });
       });
+
+      $('#clear').click(function() {
+         setCookie("user_id", "", 30);
+         setCookie("private_key", "", 30);
+         $('#fullname').prop("disabled", false);
+         $('#email').prop("disabled", false);
+         $('#facebook').prop("disabled", false);
+         $('#twitter').prop("disabled", false);
+         $('#party').prop("disabled", false);
+         $('#submit').prop( "disabled", false );
+         document.getElementById('clear').style.display = "none";
+      });
+
+
     });
 
   </script>
