@@ -112,7 +112,7 @@
 
     $(document).ready(function() {
       $('#submit').click(function() {
-        var $form = $( this );
+
         var voterinfo = {
             'name': $('#fullname').val(),
             'email': $('#email').val(),
@@ -122,19 +122,26 @@
                 'party': $('#party').val()
             }
         };
-        $.ajax({
-            type: 'POST',
-            url: 'http://expatvote.ca:3001/voter',
-            dataType: 'jsonp',
-            async: false,
+        var jqxhr = $.ajax({
+            type: "POST",
+            url: "/voter",
             data: voterinfo,
-            success: function (resultdata) {
-                console.log(resultdata);
+            success: function() {
+               alert( "success" );
             },
-            error: function(XMLHttpRequest, textStatus, errorThrown) {
-               console.log("error");
-            }
+            dataType: "json"
+        })
+        .done(function() {
+            alert( "second success" );
+        })
+        .fail(function() {
+            alert( "error" );
+        })
+        .always(function() {
+            alert( "finished" );
         });
+
+
       });
     });
 
