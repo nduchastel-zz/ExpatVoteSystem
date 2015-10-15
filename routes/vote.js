@@ -19,8 +19,7 @@ db.open(function(err, db) {
         console.log("Connected to 'voter' database");
         db.collection('voters', {strict:true}, function(err, collection) {
             if (err) {
-                console.log("The 'voters' collection doesn't exist. Creating it with sample data...");
-                populateVoters();
+                console.log("The 'voters' collection doesn't exist. Go CREATE it!");
             }
         });
     }
@@ -31,8 +30,7 @@ db.open(function(err, db) {
         console.log("Connected to 'voter links' database");
         db.collection('voters', {strict:true}, function(err, collection) {
             if (err) {
-                console.log("The 'voter links' collection doesn't exist. Creating it with sample data...");
-                populateLinks();
+                console.log("The 'voters' collection doesn't exist. Go CREATE it!");
             }
         });
     }
@@ -246,72 +244,6 @@ exports.certify = function(req, res) {
             console.log(certifier['name'] + ' was able to certify that ' + target['name'] + ' is a Canadian Expat Adult');
          }
        });
-    });
-};
-
-/*--------------------------------------------------------------------------------------------------------------------*/
-// Populate database with sample data -- Only used once: the first time the application is started.
-// You'd typically not find this code in a real-life app, since the database would already exist.
-var populateVoters = function() {
-
-    var masters = [
-    {
-	_id: "1",
-        name: "Nicolas Duchastel de Montrouge",
-        email: "nduchast@hotmail.com",
-        facebook: "facebook.com/nicolas.duchasteldemontrouge",
-        twitter: "@nduchast",
-        certified: yes,
-        master: yes
-    },
-    {
-	_id: "2",
-        name: "Gill Frank",
-        email: "gill.a.frank@gmail.com",
-        facebook: "facebook.com/gill.frank",
-        twitter: "@1gillianfrank1",
-        certified: yes,
-        master: yes
-    }];
-
-    db.collection('voters', function(err, collection) {
-        collection.insert(masters, {safe:true}, function(err, result) {});
-    });
-};
-
-
-var populateLinks = function() {
-
-    var base_links = [
-    {
-        validator: {
-           _id: "1",
-           name: "Nicolas Duchastel de Montrouge",
-           email: "nduchast@hotmail.com"
-        },
-        target: {
-           _id: "2",
-           name: "Gill Frank",
-           email: "gill.a.frank@hgmail.com"
-        },
-        certification: "Canadian Expat Adult"
-    },
-    {
-        validator: {
-           id: "2",
-           name: "Gill Frank",
-           email: "gill.a.frank@hgmail.com"
-        },
-        target: {
-           id: "1",
-           name: "Nicolas Duchastel de Montrouge",
-           email: "nduchast@hotmail.com"
-        },
-        certification: "Canadian Expat Adult"
-    }];
-
-    db.collection('links', function(err, collection) {
-        collection.insert(base_links, {safe:true}, function(err, result) {});
     });
 };
 
