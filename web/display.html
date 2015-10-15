@@ -97,7 +97,6 @@ function buildTwitter(handle) {
 <style>
 .header-cont {
     width: 100%;
-    /**position: fixed;**/
     top: 0px;
     z-index: 999;
 }
@@ -166,7 +165,8 @@ th, td {
 
     <div id="voter">
       <p><b>VOTER</b>
-      <p style=>someone who is registered in our system
+      <p id="someone">someone who is registered in our system
+      <p id="notfound" style="display: none">could not find your voter. Please check the search page.
       <table>
       <tr> <td><b>ID</b></td><td id="user_id"></td> </tr>
       <tr> <td><b>Name</b></td><td id="fullname"></td> </tr>
@@ -218,6 +218,16 @@ th, td {
             document.getElementById('certified').innerHTML = (data.certified == true ? "YES" : "not yet");
             document.getElementById('vouchers').innerHTML = data.vouchers;
             document.getElementById('master').innerHTML = (data.master == true ? "YES" : "no");
+
+            // switch some text ON / OFF
+            document.getElementById('notfound').style.display = 'none';
+            document.getElementById('comeone').style.display = 'block';
+         })
+         .fail(function( jqXHR, textStatus, errorThrown ) {
+            document.getElementById('user_id').innerHTML = '<p style="color:red">' + voter_id;
+            document.getElementById('notfound').style.display = 'block';
+            document.getElementById('someone').style.display = 'none';
+            document.getElementById('someone').innerHTML = "Could not find your voter. Please check the search page.<br><p>" + jqXHR.responseText;
          });
       }
 
