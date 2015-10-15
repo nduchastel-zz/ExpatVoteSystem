@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Vouch For Another Voter</title>
+
+<meta name="DESCRIPTION" content="Secure authenticated system to enable Canadian citizens living outside the country be able to vote in #elxn42">
+<meta name="KEYWORD" content="vote expat canada canadian elxn42 stephen harper justin trudeau tom mulclair elizabeth may">
+
+<script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.6.2.min.js"></script>
+<script>
+function setCookie(cname,cvalue,exdays) {
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    var expires = "expires=" + d.toGMTString();
+    document.cookie = cname+"="+cvalue+"; "+expires;
+}
+
+function getCookie(cname) {
+    var name = cname + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0; i<ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1);
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}
+
+function getUrlParameters(parameter, staticURL, decode){
+   /*
+    Function: getUrlParameters
+    Description: Get the value of URL parameters either from 
+                 current URL or static URL
+    Author: Tirumal
+    URL: www.code-tricks.com
+   */
+   var currLocation = (staticURL.length)? staticURL : window.location.search,
+       parArr = currLocation.split("?")[1].split("&"),
+       returnBool = true;
+   
+   for(var i = 0; i < parArr.length; i++){
+        parr = parArr[i].split("=");
+        if(parr[0] == parameter){
+            return (decode) ? decodeURIComponent(parr[1]) : parr[1];
+            returnBool = true;
+        }else{
+            returnBool = false;            
+        }
+   }
+   
+   if(!returnBool) return false;  
+}
+
+</script>
+
+<style>
+.header-cont {
+    width: 100%;
+    /**position: fixed;**/
+    top: 0px;
+    z-index: 999;
+}
+.header {
+    height: 140px;
+    background: #F0F0F0;
+    border: 3px solid #8B2942;
+    width: 960px;
+    margin: 0px auto;
+    text-align: center;
+    font-size: large;
+}
+.content {
+    width: 960px;
+    background: #F0F0F0;
+    border: 3px solid #8B2942;
+    height: 1000px;
+    margin: 20px auto;
+    font-size: large;
+}
+#requestor {
+    width: 900px;
+    padding-left: 20px;
+}
+#respondent {
+    width: 900px;
+    padding-left: 20px;
+}
+.pkey {
+    font-size: xx-small;
+}
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+th, td {
+    padding: 5px;
+}
+</style>
+
+</head>
+
+<body>
+
+  <div class="header-cont">
+    <div class="header">
+      <h1>Expat Voting System</h1>
+      <p>This page used to 'vouch' for someone else (aka certify) 
+    </div>
+  </div>
+
+  <div class="content">
+
+    <div id="requestor">
+      <p><b>REQUESTOR</b>
+      <p style="font-size:small">aka person who is needing to get certified to vote
+      <table>
+      <tr> <td><b>Name</b></td><td id="fullname"></td> </tr>
+      <tr> <td><b>Email</b></td><td id="email"></td> </tr>
+      <tr> <td><b>Facebook</b></td><td id="facebook"></td> </tr>
+      <tr> <td><b>Twitter</b></td><td id="twitter"></td> </tr>
+      <tr> <td><b>Certified yet?</b></td><td id="certified"></td> </tr>
+      <tr> <td><b>Number vouchers</b></td><td id="vouchers"></td> </tr>
+      <table>
+      <div style="font-size: x-small">
+         <p><b>Notes</b>:
+         <ul>
+           <li>Before pressing SUBMIT, follow links above and check that this is the person that meets what you are certifying</li>
+           <li>The 'requestor' (aka person list just above) will get 'certified' once they have 2 person who vouch for them and they each have a link back to a 'master' person (aka someone this web site fully trusts)</li>
+           <li>The number of 'vouchers' is the total number of person who have done this process already for this person; aka they are saying that "yeah; this person does meet the criteria".</li>
+           <li>It is possible to have 2 or more person who vouched for you already (i.e. 'Number vouchers' >= 2) and still not being certified. This occurs when there is no link to a 'master' record - see FAQ for more details</li>
+         </ul>
+      </div>
+    </div>
+
+    <br>
+
+    <div id="respondent">
+      <p><b>RESPONDANT</b>
+      <p style="font-size:small">aka you, the person who is vouching for the 'Requestor' above
+      <table>
+      <tr> <td><b>Name</b></td><td id="me_fullname"></td> </tr>
+      <tr> <td><b>Email</b></td><td id="me_email"></td> </tr>
+      <tr> <td><b>Facebook</b></td><td id="me_facebook"></td> </tr>
+      <tr> <td><b>Twitter</b></td><td id="me_twitter"></td> </tr>
+      <table>
+      <p><b>Your Private Key</b>
+      <br>
+      <textarea rows="10" cols="175" id="private_key" class="pkey"></textarea>
+      <p>What you are certifying
+      <table>
+      <tr> <td><b>Assertion</b></td><td>Canadian Citizen living outside of Canada and is 18yrs or older</td> </tr>
+      <table>
+    </div>
+
+  </div>
+
+
+  <script>
+
+    $(document).ready(function() {
+
+      // REQUESTOR (person who needs to get certified): Extract user id from URL
+      console.log(location.pathname)
+      var uri = location.pathname;
+      var requestor_id = "";
+      if (uri.indexOf("?") >= 0) {
+         var params = uri.split("?")[1];
+         for (var pair in params.split("&")) {
+            if (pair.indexOf("=") >= 0) {
+               var p_array = pair.split("=");
+               var p_name = p_array[0];
+               var p_val  = p_array[1];
+               if (p_name == "id") {
+                  requestor_id = p_va;
+                  break;
+               }
+            }
+         }
+      }
+      if (requestor_id != "") {
+         $.get("/voter/" + requestor_id, function(data) {
+            var empty = " ";
+            console.log("get for " + requestor_id + " is " + data);
+            document.getElementById('fullname').innerHTML = data.name;
+            document.getElementById('email').innerHTML = data.email;
+            document.getElementById('facebook').innerHTML = (data.facebook == undefined ? empty : data.facebook + empty);
+            document.getElementById('twitter').innerHTML = (data.twitter == undefined ? empty : data.twitter + empty);
+            document.getElementById('certified').innerHTML = (data.certified == true ? "YES" : "not yet");
+            document.getElementById('vouchers').innerHTML = data.vouchers;
+         });
+      }
+
+      // RESPONDANT (aka user/voter of this web page)
+      var user_id = getCookie("user_id");
+      if (user_id != "") {
+         $.get("/voter/" + user_id, function(data) {
+            var empty = " ";
+            console.log("get for " + user_id + " is " + data);
+            document.getElementById('me_fullname').innerHTML = data.name;
+            document.getElementById('me_email').innerHTML = data.email;
+            document.getElementById('me_facebook').innerHTML = (data.facebook == undefined ? empty : data.facebook + empty);
+            document.getElementById('me_twitter').innerHTML = (data.twitter == undefined ? empty : data.twitter + empty);
+            document.getElementById('private_key').innerHTML = getCookie("private_key");
+         });
+      }
+
+      $.ajaxSetup({
+         contentType: "application/json; charset=utf-8"
+      });
+      $('#submit').click(function() {
+
+        var voterinfo = {
+            'name': $('#fullname').val(),
+            'email': $('#email').val(),
+            'facebook': $('#facebook').val(),
+            'twitter': $('#switter').val(),
+            'vote' : {
+                'party': $('#party').val()
+            }
+        };
+        var json = JSON.stringify(voterinfo);
+        console.log("json stuff = '" + json + "'");
+        $.post( "/voter",
+                json,
+                function( data ) {
+                   console.log( data);
+                   document.getElementById('public_key').innerHTML = data.public_key;
+                   document.getElementById('private_key').innerHTML = data.private_key;
+                   document.getElementById('evote').innerHTML = data.check_vote;
+                   setCookie("user_id", data.insertedIds[0], 30);
+                   setCookie("private_key", data.private_key, 30);
+                   $('#fullname').prop("disabled", true);
+                   $('#email').prop("disabled", true);
+                   $('#facebook').prop("disabled", true);
+                   $('#twitter').prop("disabled", true);
+                   $('#party').prop("disabled", true);
+                   $('#submit').prop( "disabled", true );
+                   document.getElementById('clear').style.display = "inline";
+                }, "json")
+        .fail(function( jqXHR, textStatus, errorThrown ) {
+            alert("Error processing REST request: '" + textStatus + "'");
+          });
+      });
+
+    });
+
+  </script>
+
+</body>
+
+</html>
