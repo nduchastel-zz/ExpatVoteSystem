@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>See Specific Voter</title>
+
+<meta name="DESCRIPTION" content="Secure authenticated system to enable Canadian citizens living outside the country be able to vote in #elxn42">
+<meta name="KEYWORD" content="vote expat canada canadian elxn42 stephen harper justin trudeau tom mulclair elizabeth may">
+
+<script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.6.2.min.js"></script>
+<script>
+function setCookie(cname,cvalue,exdays) {
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    var expires = "expires=" + d.toGMTString();
+    document.cookie = cname+"="+cvalue+"; "+expires;
+}
+
+function getCookie(cname) {
+    var name = cname + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0; i<ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1);
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}
+
+function getUrlParameters(parameter, staticURL, decode){
+   /*
+    Function: getUrlParameters
+    Description: Get the value of URL parameters either from 
+                 current URL or static URL
+    Author: Tirumal
+    URL: www.code-tricks.com
+   */
+   var currLocation = (staticURL.length)? staticURL : window.location.search,
+       parArr = currLocation.split("?")[1].split("&"),
+       returnBool = true;
+   
+   for(var i = 0; i < parArr.length; i++){
+        parr = parArr[i].split("=");
+        if(parr[0] == parameter){
+            return (decode) ? decodeURIComponent(parr[1]) : parr[1];
+            returnBool = true;
+        }else{
+            returnBool = false;            
+        }
+   }
+   
+   if(!returnBool) return false;  
+}
+
+function buildFacebook(fbName) {
+   if (fbName.length < 0) {
+      return;
+   }
+   fbName = fbName.toLocaleLowerCase();
+   if (fbName.substr(0, 8) == "https://") {
+     fbName = fbName.substr(8);
+   } else if (fbName.substr(0,7) == "http://") {
+     fbName = fbName.substr(7);
+   }
+   if (fbName.substr(0,3) == "www") {
+      fbName = fbName.substr(3);
+   }
+   if (fbName.substr(0,13) == "facebook.com/") {
+      fbName = fbName.substr(13);
+   }
+   return '<a href="https://www.facebook.com/' + fbName + '">' + fbName + "</a>";
+}
+
+function buildTwitter(handle) {
+   if (handle.length < 0) {
+      return;
+   }
+   handle = handle.toLocaleLowerCase();
+   if (handle.substr(0, 8) == "https://") {
+     handle = handle.substr(8);
+   } else if (handle.substr(0,7) == "http://") {
+     handle = handle.substr(7);
+   }
+   if (handle.substr(0,3) == "www") {
+      handle = handle.substr(3);
+   }
+   if (handle.substr(0,12) == "twitter.com/") {
+      handle = handle.substr(12);
+   }
+   return '<a href="https://www.twitter.com/' + handle + '">' + handle + "</a>";
+}
+</script>
+
+<style>
+.header-cont {
+    width: 100%;
+    /**position: fixed;**/
+    top: 0px;
+    z-index: 999;
+}
+.header {
+    height: 140px;
+    background: #F0F0F0;
+    border: 3px solid #8B2942;
+    width: 960px;
+    margin: 0px auto;
+    text-align: center;
+    font-size: large;
+}
+.content {
+    width: 960px;
+    background: #F0F0F0;
+    border: 3px solid #8B2942;
+    height: 700px;
+    margin: 20px auto;
+    font-size: large;
+}
+#voter {
+    width: 900px;
+    padding-left: 20px;
+}
+table {
+    position: relative;
+    left: 100px;
+}
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+th, td {
+    padding: 5px;
+} 
+.assertion {
+    padding-left: 100px;
+}
+.big-btn {
+    background-color: #8B2942;
+    color: #F0F0F0;
+    float: left;
+    font-size: large;
+    text-align: center;
+    vertical-align: middle;
+    line-height: 30px;       /* the same as your div height */
+    padding: 10px;
+    border-radius: 10px;
+    -moz-border-radius: 10px;
+    -webkit-border-radius: 10px;
+}
+</style>
+
+</head>
+
+<body>
+
+  <div class="header-cont">
+    <div class="header">
+      <h1>Expat Voting System</h1>
+      <p>This page used to see details about a specific voter registered in our system
+    </div>
+  </div>
+
+  <div class="content">
+
+    <div id="voter">
+      <p><b>VOTER</b>
+      <p style=>someone who is registered in our system
+      <table>
+      <tr> <td><b>ID</b></td><td id="user_id"></td> </tr>
+      <tr> <td><b>Name</b></td><td id="fullname"></td> </tr>
+      <tr> <td><b>Email</b></td><td id="email"></td> </tr>
+      <tr> <td><b>Facebook</b></td><td id="facebook"></td> </tr>
+      <tr> <td><b>Twitter</b></td><td id="twitter"></td> </tr>
+      <tr> <td><b>Certified yet?</b></td><td id="certified"></td> </tr>
+      <tr> <td><b>Number vouchers</b></td><td id="vouchers"></td> </tr>
+      <tr> <td><b>Master Voter?</b></td><td id="master"></td> </tr>
+      <table>
+      <div>
+         <p><b>Notes</b>:
+         <ul>
+           <li>The number of 'vouchers' is the total number of person who vouched for this person;</li>
+           <li>To 'vouch' for someone is to say something like "yeah; this person does meet the criteria":<br>
+             <div>
+                <ol>
+                  <li>Canadian citizen;</li>
+                  <li>living outside Canada; and,</li>
+                  <li>is 18 yrs of age or more.</li>
+                </ol>
+             </div>
+           </li>
+           <li>It is possible to have 2 or more person who vouched for you already (i.e. 'Number vouchers' >= 2) and still not being certified. This occurs when there is no link to a 'master' record - see FAQ for more details</li>
+           <li>The 'master voter' is the main record (aka Nicolas Duchastel de Montrouge): since this is not an official web of the government of Canada, we do not have the resources to officially certify someone. We accomplish a similar mechanism by having 2 people vouch for any one voter and then, have a 'web of trust' go back to one of the Master Voters;</li>
+         </ul>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+
+    $(document).ready(function() {
+
+      // VOTER 
+      var voter_id = getUrlParameters("id", "", true);
+      if (voter_id) {
+         $.get("/voter/" + voter_id, function(data) {
+            var empty = " ";
+            console.log("voter " + voter_id + " is " + data.name);
+            document.getElementById('user_id').innerHTML = voter_id;
+            document.getElementById('fullname').innerHTML = data.name;
+            document.getElementById('email').innerHTML = data.email;
+            var fbHTML = buildFacebook(data.facebook == undefined ? empty : data.facebook + empty);
+            document.getElementById('facebook').innerHTML = fbHTML;
+            var twitterHTML = buildTwitter(data.twitter == undefined ? empty : data.twitter + empty);
+            document.getElementById('twitter').innerHTML = twitterHTML;
+            document.getElementById('certified').innerHTML = (data.certified == true ? "YES" : "not yet");
+            document.getElementById('vouchers').innerHTML = data.vouchers;
+            document.getElementById('master').innerHTML = (data.master == true ? "YES" : "no");
+         });
+      }
+
+
+    });
+
+  </script>
+
+</body>
+
+</html>
