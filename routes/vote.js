@@ -2,7 +2,9 @@ var mongo = require('mongodb');
 var validator = require('validator');
 var child_process = require('child_process');
 
+var log4js = require('log4js');
 
+var log = log4js.getLogger('vote');
 
 var ursa = require('ursa');
 var fs = require('fs');
@@ -11,15 +13,17 @@ var Server = mongo.Server,
     Db = mongo.Db,
     BSON = mongo.BSONPure;
 
+log.debug("about to connect to mongodb");
+
 var server = new Server('localhost', 27017, {auto_reconnect: true});
 db = new Db('voters', server);
 
 db.open(function(err, db) {
     if(!err) {
-        console.log("Connected to 'voter' database");
+        log.info("Connected to 'voter' database");
         db.collection('voters', {strict:true}, function(err, collection) {
             if (err) {
-                console.log("The 'voters' collection doesn't exist. Go CREATE it!");
+                log.error("The 'voters' collection doesn't exist. Go CREATE it!");
             }
         });
     }
@@ -27,10 +31,10 @@ db.open(function(err, db) {
 
 db.open(function(err, db) {
     if(!err) {
-        console.log("Connected to 'voter links' database");
+        log.info("Connected to 'voter links' database");
         db.collection('voters', {strict:true}, function(err, collection) {
             if (err) {
-                console.log("The 'voters' collection doesn't exist. Go CREATE it!");
+                log.error("The 'voters' collection doesn't exist. Go CREATE it!");
             }
         });
     }
@@ -57,38 +61,38 @@ db.open(function(err, db) {
 //   }
 exports.createKeysAndVote = function(req, res) {
     var voter = req.body;
-    console.log('Adding voter: ' + JSON.stringify(voter));
+    log.debug('Adding voter: ' + JSON.stringify(voter));
 
     // look for name
     if (!voter.hasOwnProperty('name')) {
-       console.log('invalid voter information: missing voter name');
+       log.error('invalid voter information: missing voter name');
        res.status(400).send('invalid voter information: missing voter name');
        return;
     }
-    console.log("Voter's name is " + voter['name']);
+    log.debug("Voter's name is " + voter['name']);
     if (voter['name'].length < 1) {
-       console.log('invalid voter information: empty voter name');
+       log.error('invalid voter information: empty voter name');
        res.status(400).send('invalid voter information: empty voter name');
        return;
     }
 
     // check email
     if (!voter.hasOwnProperty('email')) {
-       console.log('invalid voter information: missing email');
+       log.error('invalid voter information: missing email');
        res.status(400).send('invalid voter information: missing email');
        return;
     }
     if (!validator.isEmail(voter['email'])) {
-       console.log("invalid voter information: invalid email: '" + voter['email']+"'");
+       log.error("invalid voter information: invalid email: '" + voter['email']+"'");
        res.status(400).send("invalid voter information: invalid email: '" + voter['email']+"'");
        return;
     }
-    console.log("looking for email '" + voter.email + "'");
+    log.debug("looking for email '" + voter.email + "'");
     db.collection('voters', function(err, collection) {
         collection.findOne({'email': voter.email}, function(err, item) {
           if (item) {
-             console.log("already found item is '" + item + "'");
-             console.log("voter already exist for email '" + voter.email + "'; id = '" + item._id + "'");
+             log.error("already found item is '" + item + "'");
+             log.error("voter already exist for email '" + voter.email + "'; id = '" + item._id + "'");
              res.status(403).send("voter already exist for email '" + voter.email + "'; id = '" + item._id + "'");
              return;
           }
@@ -96,13 +100,13 @@ exports.createKeysAndVote = function(req, res) {
 
           // check for party vote
           if (!voter.hasOwnProperty('vote')) {
-             console.log('must specify what party / form whom you are voting for');
+             log.error('must specify what party / form whom you are voting for');
              res.status(400).send('must specify what party / form whom you are voting for');
              return;
           }
           var vote = voter['vote'];
           if (!vote.hasOwnProperty('party')) {
-             console.log('must specify for which party you are voting for');
+             log.error('must specify for which party you are voting for');
              res.status(400).send('must specify for which party you are voting for');
              return;
           }
@@ -116,12 +120,12 @@ exports.createKeysAndVote = function(req, res) {
             case 'none':
               break;
             default:
-              console.log('must specify a valid party or none');
+              log.error('must specify a valid party or none');
               res.status(400).send('must specify a valid party or none');
               return;
           }
 
-          console.log('about to start key gen');
+          log.debug('about to start key gen');
 
           // genrate keys
           var keys = ursa.generatePrivateKey(1024);
@@ -130,12 +134,17 @@ exports.createKeysAndVote = function(req, res) {
           var priv = ursa.createPrivateKey(privPem, '', 'base64');
           var pub = ursa.createPublicKey(pubPem, 'base64');
 
-          console.log("public key pem ='" + pubPem + "'");
-          console.log("private key pem ='" + privPem + "'");
+          log.debug("public key pem ='" + pubPem + "'");
+          log.debug("private key pem ='" + privPem + "'");
+
+          var privUTF8 = keys.toPrivatePem('utf8');
+          var pubUTF8 = keys.toPrivatePem('utf8');
+          log.debug("public key pem (utf8) ='" + pubUTF8 + "'");
+          log.debug("private key pem (utf8) ='" + privUTF8 + "'");
 
           // encrypt vote
           var encrypted_vote = priv.privateEncrypt(party, 'utf8', 'base64');
-          console.log("encrypted message = '" + encrypted_vote + "'");
+          log.debug("encrypted message = '" + encrypted_vote + "'");
 
           // save public key (for DB)
           voter.public_key = pubPem;
@@ -147,13 +156,11 @@ exports.createKeysAndVote = function(req, res) {
           // remove vote from object to store in DB.
           delete voter['vote'];
 
-          console.log('after delete \n' + JSON.stringify(voter));
-
           // write to DB
           db.collection('voters', function(err, collection) {
              collection.insert(voter, {safe:true}, function(err, result) {
                 if (err) {
-                    console.log({'error':'An error has occurred'});
+                    log.error({'error':'An error has occurred'});
                     res.status(500).send({'error':'An error has occurred'});
                     return;
                 }
@@ -163,7 +170,7 @@ exports.createKeysAndVote = function(req, res) {
                 result.private_key = privPem;
                 result.check_vote = check;
 
-                console.log("ID for '" + voter['name'] + "' is '" + result.insertedIds[0] + "'");
+                log.info("ID for '" + voter['name'] + "' is '" + result.insertedIds[0] + "'");
 
                 res.send(result);
                 return;
@@ -177,74 +184,98 @@ exports.createKeysAndVote = function(req, res) {
 
 // sample request to certify someone else
 //    {
-//      "validator": {
-//         "gpg_name" : "Gill Frank (some_email@gmail.com)",
-//         "_id": "5567893"
-//         "private_key" : "
-//              -----BEGIN RSA PRIVATE KEY-----
-//              MIIEpAIBAAKCAQEAy5q9/zTgeMXTj8Sj+gvv8ux9NeAhqZp8joYPo2vivA+oWqMD
-//              …."
-//      },
-//      "certification" : "Canadian Expat Adult"
+//      "respondent_id": "561e619e6844cd6825f71123"
+//      "guarantee" : "2388830aa391299d9299901238786471ffeabbcd828000"
 //    }
+//    Note:
+//     * Where guarantee is text "Canadian Expat Adult" encrypted with respondent's private key;
+//     * Requestor's id is passed in the URL:
 exports.certify = function(req, res) {
-    var target_id = req.params.id;
-    var j_req = req.body;
+    var requestor_id = req.params.id;
+    var json = req.body;
 
-    console.log('Certifying: ' + JSON.stringify(j_req));
+    log.info("Certifying '" + requestor_id + "' using '" + JSON.stringify(json) +"'");
 
-    var request = JSON.parse(j_req);
-   
-    var target = db.collection('voters', function(err, collection) {
-        return collection.find({_id: target_id}).limit(1);
-    });
-    if (target.length < 1)
-    {
-      res.status(400).send('Voter to certified not found');
-      return;
-    }
-    if (request.indexOf("validator")  < 0) {
-       console.log('Cannot certify as validator is not defined!');
-       res.status(404).send('missing validator');
+    // look for respondent's id
+    if (!json.hasOwnProperty('respondent_id')) {
+       log.error('missing responding id in json query');
+       res.status(400).send('missing responding id in json query');
        return;
     }
-    if (request["validator"].indexOf("_id") < 0) {
-       console.log('Cannot certify as id for validator  is not defined!');
-       res.status(403).send('missing validator id');
+    var respondent_id = json.respondent_id;
+
+    // look for encrypted guarantee
+    if (!json.hasOwnProperty('guarantee')) {
+       log.error('missing encrypted guarantee in json query');
+       res.status(400).send('missing encrypted guarantee in json query');
        return;
     }
-    var certifier = db.collection('links', function(err, collection) {
-        var myId = request['validator']['_id'];
-        return collection.find({_id: myId}).limit(1);
-    });
-    if (certifier.length < 1)
-    {
-      res.status(404).send('Voter which would certify not found');
-      return;
-    }
-    db.collection('links', function(err, collection) {
-       var link = {
-          "validator" : {
-             "_id": certifier['_id'],
-             "name": certifier['name'],
-             "email": certifier['email']
-          },
-          "target" : {
-             "_id": target['_id'],
-             "name": target['name'],
-             "email": target['email']
-          },
-          "target" : "Canadian Expat Adult"
-       };
-       collection.insert(link, {safe:true}, function(err, result) {
-         if (err) {
-            console.log('ERROR: ' + certifier['name'] + ' was NOT able to certify that ' + target['name'] + ' is a Canadian Expat Adult');
-            res.status(500, 'some unknown server error trying to add certification');
-         } else {
-            console.log(certifier['name'] + ' was able to certify that ' + target['name'] + ' is a Canadian Expat Adult');
-         }
-       });
-    });
+    var guarantee = json.guarantee;
+
+    // fetch requestor's data from DB (aka person who needs to get certified)
+    log.debug("looking for requestor '" + requestor_id + "'");
+    db.collection('voters', function(err, collection) {
+        var obj_id = new require('mongodb').ObjectID(requestor_id);
+        collection.findOne({'_id': obj_id}, function(err, requestor) {
+          if (!requestor) {
+             log.error("cannot find requestor '" + requestor_id + "'");
+             res.status(404).send("cannot find requestor '" + requestor_id + "'");
+             return;
+          }
+          log.info("found requestor '" + requestor.name + "' (" + requestor_id + ")");
+  
+          log.debug("looking for respondent '" + respondent_id + "'");
+          obj_id = new require('mongodb').ObjectID(respondent_id);
+          collection.findOne({'_id': obj_id}, function(err, respondent) {
+            if (!respondent) {
+               log.error("cannot find respondent '" + respondent_id + "'");
+               res.status(404).send("cannot find respondent '" + respondent_id + "'");
+               return;
+            }
+            log.info("found respondent '" + respondent.name + "' (" + respondent_id + ")");
+
+            // validate encrypted guarantee / certification
+/***
+            var pub = ursa.createPublicKey(respondent.public_key, 'base64');
+            var check = pub.publicDecrypt(guarantee, 'base64', 'utf8');
+            log.debug("decrypyed guarantee text is '" + check + "'");
+
+***/
+            check = guarantee;
+            if (check.toLocaleLowerCase() != "canadian expat adult") {
+               log.error("invalid gurantee; maybe cannot decrypt?");
+               res.status(400).send("invalid gurantee; maybe cannot decrypt?");
+               return;
+            }
+ 
+            var link = {
+               "validator" : {
+                  "_id": respondent_id,
+                  "name": respondent.name,
+                  "email": respondent.email
+               },
+               "target" : {
+                  "_id": requestor_id,
+                  "name": requestor.name,
+                  "email": requestor.email
+               },
+               "target" : "Canadian Expat Adult"
+            };
+            db.collection('links', function(err, collection) {
+               collection.insert(link, {safe:true}, function(err, result) {
+                  if (err) {
+                     log.error("ERROR: error inserting '" + requestor.name + "' vouching for '" + respondent.name + "'");
+                     res.status(500).send('some unknown server error trying to add certification');
+                     return;
+                  }
+
+                  log.info("successfully inserted '" + requestor.name + "' vouching for '" + respondent.name + "'");
+                  res.status(200).send();
+               });
+            });
+         }); 
+        });
+      });
 };
 
 
@@ -252,7 +283,7 @@ exports.certify = function(req, res) {
 exports.fetchVoter = function(req, res) {
     var id = req.params.id;
     var obj_id = new require('mongodb').ObjectID(req.params.id);
-    console.log("Retrieving voter: '" + id + "'");
+    log.info("Retrieving voter: '" + id + "'");
     db.collection('voters', function(err, collection) {
         collection.findOne({'_id': obj_id}, function(err, item) {
             delete item.encrypted_vote;
