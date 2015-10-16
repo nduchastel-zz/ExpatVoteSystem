@@ -1,6 +1,7 @@
 var mongo = require('mongodb');
 var validator = require('validator');
 var child_process = require('child_process');
+var url = require('url');
 
 var log4js = require('log4js');
 
@@ -48,13 +49,8 @@ db.open(function(err, db) {
 //      "name" : "Nicolas Duchastel de Montrouge",                 -- MANDATORY
 //      "email" : "nduchast@hotmail.com",                          -- MANDATORY
 //      "facebook" : "facebook.com/nicolas.duchasteldemontrouge",  -- optional
-//      "twitter" : "@nduchast"                                    -- optional
-//      "lastRiding" : "Hull-Aylmer",                              -- optional
-//      "currentLocation" : {                                      -- optional
-//          "city": "Woodinville",                                 -- any set of fields
-//          "state" : "Washington",
-//          "country" : "USA"
-//      },
+//      "twitter" : "@nduchast",                                   -- optional
+//      "guid" : "1234-5678-90abcdef-1234-4567",                   -- MANDATORY
 //      "vote": {
 //        "party": "ndp" 
 //      }
@@ -76,6 +72,14 @@ exports.createKeysAndVote = function(req, res) {
        return;
     }
 
+    // check GUID
+    if (!voter.hasOwnProperty('guid')) {
+       log.error('invalid voter information: missing GUID');
+       res.status(400).send('invalid voter information: missing GUID');
+       return;
+    }
+    log.debug("Voter's generated GUID is " + voter['guid']);
+
     // check email
     if (!voter.hasOwnProperty('email')) {
        log.error('invalid voter information: missing email');
@@ -96,7 +100,6 @@ exports.createKeysAndVote = function(req, res) {
              res.status(403).send("voter already exist for email '" + voter.email + "'; id = '" + item._id + "'");
              return;
           }
-
 
           // check for party vote
           if (!voter.hasOwnProperty('vote')) {
@@ -179,13 +182,13 @@ exports.createKeysAndVote = function(req, res) {
 
         });
     });
-
 };
 
 // sample request to certify someone else
 //    {
 //      "respondent_id": "561e619e6844cd6825f71123"
-//      "guarantee" : "2388830aa391299d9299901238786471ffeabbcd828000"
+//      "guarantee" : "canadian adult expat",
+//      "guid" : "12345678-90AB-CDEF-0123-4567890A"
 //    }
 //    Note:
 //     * Where guarantee is text "Canadian Expat Adult" encrypted with respondent's private key;
@@ -196,88 +199,165 @@ exports.certify = function(req, res) {
 
     log.info("Certifying '" + requestor_id + "' using '" + JSON.stringify(json) +"'");
 
-    // look for respondent's id
+    // RESPONDENT (aka person who is vouching for the other)
     if (!json.hasOwnProperty('respondent_id')) {
-       log.error('missing responding id in json query');
-       res.status(400).send('missing responding id in json query');
-       return;
+        log.error('missing responding id in json query');
+        res.status(400).send('missing responding id in json query');
+        return;
     }
     var respondent_id = json.respondent_id;
 
-    // look for encrypted guarantee
+    // GUARANTEE
     if (!json.hasOwnProperty('guarantee')) {
-       log.error('missing encrypted guarantee in json query');
-       res.status(400).send('missing encrypted guarantee in json query');
-       return;
+        log.error('missing guarantee in json query');
+        res.status(400).send('missing guarantee in json query');
+        return;
     }
     var guarantee = json.guarantee;
 
-    // fetch requestor's data from DB (aka person who needs to get certified)
-    log.debug("looking for requestor '" + requestor_id + "'");
-    db.collection('voters', function(err, collection) {
-        var obj_id = new require('mongodb').ObjectID(requestor_id);
-        collection.findOne({'_id': obj_id}, function(err, requestor) {
-          if (!requestor) {
-             log.error("cannot find requestor '" + requestor_id + "'");
-             res.status(404).send("cannot find requestor '" + requestor_id + "'");
-             return;
-          }
-          log.info("found requestor '" + requestor.name + "' (" + requestor_id + ")");
-  
-          log.debug("looking for respondent '" + respondent_id + "'");
-          obj_id = new require('mongodb').ObjectID(respondent_id);
-          collection.findOne({'_id': obj_id}, function(err, respondent) {
-            if (!respondent) {
-               log.error("cannot find respondent '" + respondent_id + "'");
-               res.status(404).send("cannot find respondent '" + respondent_id + "'");
-               return;
-            }
-            log.info("found respondent '" + respondent.name + "' (" + respondent_id + ")");
+    // Check that GUARANTEE is valid
+    if (guarantee.toLocaleLowerCase() != "canadian expat adult") {
+       log.error("invalid gurantee; maybe cannot decrypt?");
+       res.status(400).send("invalid gurantee; maybe cannot decrypt?");
+       return;
+    }
 
-            // validate encrypted guarantee / certification
-/***
-            var pub = ursa.createPublicKey(respondent.public_key, 'base64');
-            var check = pub.publicDecrypt(guarantee, 'base64', 'utf8');
-            log.debug("decrypyed guarantee text is '" + check + "'");
+    // GUID
+    if (!json.hasOwnProperty('guid')) {
+        log.error('missing guid in json query');
+        res.status(400).send('missing guid in json query');
+        return;
+    }
+    var guid = json.guid;
+    log.debug("GUID is = '" + guid + "' of size = " + guid.length);
+    if (guid.length != 32) {
+        log.error("invalid guid in json query (guid='" + guid + "')");
+        res.status(400).send("invalid guid in json query (guid='" + guid + "')");
+        return;
+    }
 
-***/
-            check = guarantee;
-            if (check.toLocaleLowerCase() != "canadian expat adult") {
-               log.error("invalid gurantee; maybe cannot decrypt?");
-               res.status(400).send("invalid gurantee; maybe cannot decrypt?");
-               return;
+
+    // get ObjectID objects; so that we can query with them later
+    var requestor_ob_id  = new require('mongodb').ObjectID(requestor_id);
+    var respondent_ob_id = new require('mongodb').ObjectID(respondent_id);
+
+    // check if already vouched: i.e. if respondant already vouched for requestor
+    db.collection('links', function(err, collection) {
+
+        collection.findOne(
+            { '_id': respondent_ob_id,
+              'validtor._id': respondent_ob_id }, function(err, link) {
+
+            if (err) {
+                log.error("error searching for link: " + err);
+                res.status(500).send("error searching for link '" + respondent_id + "' vouching for '" + requestor_id + "'");
+                return;
             }
- 
-            var link = {
-               "validator" : {
-                  "_id": respondent_id,
-                  "name": respondent.name,
-                  "email": respondent.email
-               },
-               "target" : {
-                  "_id": requestor_id,
-                  "name": requestor.name,
-                  "email": requestor.email
-               },
-               "target" : "Canadian Expat Adult"
-            };
-            db.collection('links', function(err, collection) {
-               collection.insert(link, {safe:true}, function(err, result) {
-                  if (err) {
-                     log.error("ERROR: error inserting '" + requestor.name + "' vouching for '" + respondent.name + "'");
-                     res.status(500).send('some unknown server error trying to add certification');
+
+            if (link) {
+                log.info("already have '" + respondent_id + "' vouching for '" + requestor_id + "'");
+                res.status(403).send("already have '" + respondent_id + "' vouching for '" + requestor_id + "'");
+                return;
+            }
+
+
+            // fetch requestor's data from DB (aka person who needs to get certified)
+            log.debug("looking for requestor '" + requestor_id + "'");
+            db.collection('voters', function(err, collection) {
+
+                collection.findOne({'_id': requestor_ob_id}, function(err, requestor) {
+                  if (!requestor) {
+                     log.error("cannot find requestor '" + requestor_id + "'");
+                     res.status(404).send("cannot find requestor '" + requestor_id + "'");
                      return;
                   }
+                  log.info("found requestor '" + requestor.name + "' (" + requestor_id + "); email='" + requestor.email + "'");
+  
+                  // RESPONDENT (person who is vouching that other is legit)
+                  log.debug("looking for respondent '" + respondent_id + "'");
+                  collection.findOne({'_id': respondent_ob_id}, function(err, respondent) {
 
-                  log.info("successfully inserted '" + requestor.name + "' vouching for '" + respondent.name + "'");
-                  res.status(200).send();
-               });
-            });
-         }); 
-        });
-      });
+                      if (!respondent) {
+                          log.error("cannot find respondent '" + respondent_id + "'");
+                          res.status(404).send("cannot find respondent '" + respondent_id + "'");
+                          return;
+                      }
+
+                      log.info("found respondent '" + respondent.name + "' (" + respondent_id + "); email='" + respondent.email + "'");
+
+                      // "encryption" (using GUID since issues with keys) check: is this the real respondent? can this request vouch?
+                      if (respondent.guid.trime().toLowerCase() != guid) {
+                          log.error("encryption error; not authorized to vouch for requestor");
+                          res.status(404).send("encryption error; not authorized to vouch for requestor");
+                          return;
+                      }
+
+                      // OK; all checks done... NOW ADD a new link!  aka vouch!
+                      var link = {
+                         "validator" : {
+                            "_id": respondent_id,
+                            "name": respondent.name,
+                            "email": respondent.email
+                         },
+                         "target" : {
+                            "_id": requestor_id,
+                            "name": requestor.name,
+                            "email": requestor.email
+                         },
+                         "target" : "canadian expat adult"
+                      };
+                      db.collection('links', function(err, collection) {
+                          collection.insert(link, {safe:true}, function(err, result) {
+                              if (err) {
+                                  log.error("ERROR: error inserting '" + requestor.name + "' vouching for '" + respondent.name + "'");
+                                  res.status(500).send('some unknown server error trying to add certification');
+                                  return;
+                              }
+
+                              log.info("successfully inserted '" + requestor.name + "' vouching for '" + respondent.name + "'");
+                              res.status(200).send();
+                          }); //   insert
+                      }); //       'links' collection
+
+
+                  }); //           find RESPONDENT
+
+                }); //             find REQUESTOR
+
+            }); //                 'voters' collection
+
+        }); //                     find if link already present
+
+
+    });  //                        'links' collection
+
+
 };
 
+function empty(data)
+{
+  if(typeof(data) == 'number' || typeof(data) == 'boolean')
+  { 
+    return false; 
+  }
+  if(typeof(data) == 'undefined' || data === null)
+  {
+    return true; 
+  }
+  if(typeof(data.length) != 'undefined')
+  {
+    return data.length == 0;
+  }
+  var count = 0;
+  for(var i in data)
+  {
+    if(data.hasOwnProperty(i))
+    {
+      count ++;
+    }
+  }
+  return count == 0;
+}
 
 
 exports.fetchVoter = function(req, res) {
@@ -291,4 +371,61 @@ exports.fetchVoter = function(req, res) {
         });
     });
 };
+
+exports.search = function(req, res) {
+  var queryData = url.parse(req.url, true).query;
+  log.debug("query data is = '" + queryData + "'");
+
+  var fullname = queryData.fullname ? queryData.fullname : null;
+  var email = queryData.email ? queryData.email : null;
+  var facebook = queryData.facebook ? queryData.facebook : null;
+  var twitter = queryData.twitter ? queryData.twitter : null;
+  log.debug("fullname = '" + fullname + "' is "  + (empty(fullname) ? "empty" : 'not_empty'));;
+  log.debug("email = '" + email + "' is " + (empty(email) ? "empty" : "not_empty"));
+  log.debug("facebook = '" + facebook + "' is "  + (empty(facebook) ? "empty" : 'not_empty'));;
+  log.debug("twitter = '" + twitter + "' is " + (empty(twitter) ? "empty" : "not_empty"));
+
+  var query = { };
+  if (!empty(fullname)) {
+    query.name = new RegExp(fullname, 'i');
+  }
+  if (!empty(email)) {
+    query.email = new RegExp(email, 'i');
+  }
+  if (!empty(facebook)) {
+    query.facebook = new RegExp(facebook, 'i');
+  }
+  if (!empty(twitter)) {
+    query.twitter = new RegExp(twitter, 'i');
+  }
+  if (empty(query)) {
+     log.error("must specify something for a search criteria");
+     res.status(400).send("must specify something for a search criteria");
+     return;
+  }
+
+  log.info("search with query = '" + JSON.stringify(query) + "'");
+
+  var options = {
+    "limit": 10,
+    "sort": "name"
+  }
+  var fields = {
+     "vote" : false,
+     "encrypted_vote" : false,
+     "guid" : false
+  }
+  db.collection('voters', function(err, collection) {
+      collection.find(query, fields, options).toArray(function(err, docs) {
+          if (err) {
+              res.status(500).send("can't execute search: " +err);
+              return;
+          }
+          res.send(docs);
+      });
+  });
+
+};
+
+
 
