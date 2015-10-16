@@ -56,10 +56,10 @@ function empty(data)
 }
 
 
-function search() {
+function doSomeSearching() {
    // extract search criteria
-   var name_criteria = document.getElementById('fullname').innerHTML;
-   var email_criteria = document.getElementById('email').innerHTML
+   var name_criteria = document.getElementById('fullname').value;
+   var email_criteria = document.getElementById('email').value;
 
    var get_params = {
      fullname: name_criteria,
@@ -68,7 +68,7 @@ function search() {
    if (empty(get_params.fullname)) {
      delete get_params.fullname;
    }
-   if (empty(get_param.email)) {
+   if (empty(get_params.email)) {
      delete get_params.email;
    }
 
@@ -82,10 +82,25 @@ function search() {
           if (empty(results)) {
               document.getElementById('results').style.display = 'none';
               document.getElementById('nothing').style.display = 'block';
-          } else {
-              document.getElementById('results').style.display = 'block';
-              document.getElementById('nothing').style.display = 'none';
+              return;
           }
+
+          document.getElementById('results').style.display = 'block';
+          document.getElementById('nothing').style.display = 'none';
+
+          var row = "";
+          $.each(results, function(index, item) {
+             row += '<tr><td><a href="/display.html?id=' + item._id + '">' + item.name + '</td>'
+                 +  '<td><a href="mailto:"' + item.email + '?Subject=Can%20you%20vouch%20for%20me%20as%20a%20Canadian%20Expat%3F" target="_top">'
+                 + item.email + '</a></td>'
+                 + '<td>';
+             if (item.certified) {
+                 row += '<font style="color: green">YES</font></td></tj>';
+             } else {
+                 row += '<font style="color: red">no yet</font></td></tr>';
+             }
+            });
+          $("#voters").html(row); 
 
       },
       "json"
@@ -120,21 +135,37 @@ function search() {
 }
 #voter {
     width: 900px;
-    padding-left: 20px;
+    padding-left: 40px;
 }
-table {
-    position: relative;
-    left: 100px;
+table.gridtable {
+	font-family: verdana,arial,sans-serif;
+	font-size:11px;
+	color:#333333;
+	border-width: 1px;
+	border-color: #666666;
+	border-collapse: collapse;
 }
-table, th, td {
-    border: 1px solid black;
-    border-collapse: collapse;
+table.gridtable th {
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #dedede;
 }
-th, td {
-    padding: 5px;
-} 
+table.gridtable td {
+	border-width: 1px;
+	padding: 8px;
+	border-style: solid;
+	border-color: #666666;
+	background-color: #ffffff;
+}
+
 .search_div {
     padding-left: 100px;
+    height: 75px;
+}
+.table_div {
+    padding-left: 60px;
 }
 .big-btn {
     background-color: #8B2942;
@@ -165,7 +196,10 @@ th, td {
   <div class="content">
     <div id="voter">
       <p><b>SEARCH</b>
+      <br>
+      <p><b>Full Name</b> <br>
       <input type="text" name="fullname" id="fullname" maxlength="50" size="50" >
+      <p><b>Email address</b> <br>
       <input type="text" name="email" id="email" maxlength="50" size="50" >
       <div>
          <p><b>Notes</b>:
@@ -178,19 +212,24 @@ th, td {
     <br>
 
     <div class="search_div">
-      <button class="big-btn" onclick="search()">Search</button>
+      <button class="big-btn" onclick="doSomeSearching()">SEARCH</button>
     </div>
 
-    <br>
 
-    <div>
-       <table id="results" style="display:none;">
-         <th>
-           <td>Full Name</td>
-           <td>Email address</td>
-           <td>Certify</td>
-         </th>
+    <div class="table_div">
+       <table class="gridtable" id="results" style="display:none;">
+         <thead>
+           <tr>
+             <th>Full Name</th>
+             <th>Email address</th>
+             <th>Certify</th>
+           </tr>
+         </thead>
+
+         <tbody id="voters"></tbody>
        </table>
+
+       <br>
        <div id="nothing" style="display:none;">
          <p>Nothing found! Try a new search criteria
        </div>
@@ -199,45 +238,9 @@ th, td {
 
   </div>
 
-
-  <script>
-    $(document).ready(function() {
-
-      // VOTER 
-      var voter_id = getUrlParameters("id", "", true);
-      if (voter_id) {
-         $.get("/voter/" + voter_id, function(data) {
-            var empty = " ";
-            console.log("voter " + voter_id + " is " + data.name);
-            document.getElementById('user_id').innerHTML = voter_id;
-            document.getElementById('fullname').innerHTML = data.name;
-            document.getElementById('email').innerHTML = data.email;
-            var fbHTML = buildFacebook(data.facebook == undefined ? empty : data.facebook + empty);
-            document.getElementById('facebook').innerHTML = fbHTML;
-            var twitterHTML = buildTwitter(data.twitter == undefined ? empty : data.twitter + empty);
-            document.getElementById('twitter').innerHTML = twitterHTML;
-            document.getElementById('certified').innerHTML = (data.certified == true ? "YES" : "not yet");
-            document.getElementById('vouchers').innerHTML = data.vouchers;
-            document.getElementById('master').innerHTML = (data.master == true ? "YES" : "no");
-
-            // switch some text ON / OFF
-            document.getElementById('notfound').style.display = 'none';
-            document.getElementById('comeone').style.display = 'block';
-         })
-         .fail(function( jqXHR, textStatus, errorThrown ) {
-            document.getElementById('user_id').innerHTML = '<p style="color:red">' + voter_id;
-            document.getElementById('notfound').style.display = 'block';
-            document.getElementById('someone').style.display = 'none';
-            document.getElementById('someone').innerHTML = "Could not find your voter. Please check the search page.<br><p>" + jqXHR.responseText;
-         });
-      }
-
-
-    });
-
-  </script>
-
 </body>
 
 </html>
+
+
 
