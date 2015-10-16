@@ -55,6 +55,43 @@ function empty(data)
   return count == 0;
 }
 
+function buildFacebook(fbName) {
+   if (fbName.length < 0) {
+      return;
+   }
+   fbName = fbName.toLocaleLowerCase();
+   if (fbName.substr(0, 8) == "https://") {
+     fbName = fbName.substr(8);
+   } else if (fbName.substr(0,7) == "http://") {
+     fbName = fbName.substr(7);
+   }
+   if (fbName.substr(0,3) == "www") {
+      fbName = fbName.substr(3);
+   }
+   if (fbName.substr(0,13) == "facebook.com/") {
+      fbName = fbName.substr(13);
+   }
+   return '<a href="https://www.facebook.com/' + fbName + '">' + fbName + "</a>";
+}
+
+function buildTwitter(handle) {
+   if (handle.length < 0) {
+      return;
+   }
+   handle = handle.toLocaleLowerCase();
+   if (handle.substr(0, 8) == "https://") {
+     handle = handle.substr(8);
+   } else if (handle.substr(0,7) == "http://") {
+     handle = handle.substr(7);
+   }
+   if (handle.substr(0,3) == "www") {
+      handle = handle.substr(3);
+   }
+   if (handle.substr(0,12) == "twitter.com/") {
+      handle = handle.substr(12);
+   }
+   return '<a href="https://www.twitter.com/' + handle + '">' + handle + "</a>";
+}
 
 function doSomeSearching() {
    // extract search criteria
@@ -90,12 +127,25 @@ function doSomeSearching() {
 
           var row = "";
           $.each(results, function(index, item) {
-             row += '<tr><td><a href="/display.html?id=' + item._id + '">' + item.name + '</td>'
-                 +  '<td><a href="mailto:"' + item.email + '?Subject=Can%20you%20vouch%20for%20me%20as%20a%20Canadian%20Expat%3F" target="_top">'
+             row += '<tr><td><a href="/display.html?id=' + item._id + '">' + item.name + '</a></td>'
+                 +  '<td><a href="mailto:' + item.email + '?Subject=Can%20you%20vouch%20for%20me%20as%20a%20Canadian%20Expat%3F" target="_top">'
                  + item.email + '</a></td>'
                  + '<td>';
+             if (!empty(item.facebook)) {
+                 row += buildFacebook(item.facebook);
+             } else {
+                 row += '<font size="x-small">N / A</font>';
+             }
+             row += '</td><td>';
+             if (!empty(item.twitter)) {
+                 row += buildTwitter(item.twitter);
+             } else {
+                 row += '<font size="x-small">N / A</font>';
+             }
+             row += '</td><td>';
+
              if (item.certified) {
-                 row += '<font style="color: green">YES</font></td></tj>';
+                 row += '<font style="color: green">YES</font></td></tr>';
              } else {
                  row += '<font style="color: red">no yet</font></td></tr>';
              }
@@ -222,6 +272,8 @@ table.gridtable td {
            <tr>
              <th>Full Name</th>
              <th>Email address</th>
+             <th>Facebook</th>
+             <th>Twitter</th>
              <th>Certify</th>
            </tr>
          </thead>
