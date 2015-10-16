@@ -30,6 +30,18 @@ function getCookie(cname) {
     return "";
 }
 
+// function to generate a pseudo-guid (actually could be OK since RFC says we can have random GUIDs)
+// in any case, it is good enough for this proof of concept.
+function guid() {
+  function s4() {
+    return Math.floor((1 + Math.random()) * 0x10000)
+      .toString(16)
+      .substring(1);
+  }
+  return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+    s4() + '-' + s4() + s4() + s4();
+}
+
 </script>
 
 <style>
@@ -193,6 +205,7 @@ function getCookie(cname) {
             'email': $('#email').val(),
             'facebook': $('#facebook').val(),
             'twitter': $('#switter').val(),
+            'guid': guid(),
             'vote' : {
                 'party': $('#party').val()
             }
@@ -208,6 +221,7 @@ function getCookie(cname) {
                    document.getElementById('evote').innerHTML = data.check_vote;
                    setCookie("user_id", data.insertedIds[0], 30);
                    setCookie("private_key", data.private_key, 30);
+                   setCookie("guid", data.guid, 30);
                    $('#fullname').prop("disabled", true);
                    $('#email').prop("disabled", true);
                    $('#facebook').prop("disabled", true);
