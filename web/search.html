@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>See Specific Voter</title>
+
+<meta name="DESCRIPTION" content="Secure authenticated system to enable Canadian citizens living outside the country be able to vote in #elxn42">
+<meta name="KEYWORD" content="vote expat canada canadian elxn42 stephen harper justin trudeau tom mulclair elizabeth may">
+
+<script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.6.2.min.js"></script>
+<script>
+function setCookie(cname,cvalue,exdays) {
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    var expires = "expires=" + d.toGMTString();
+    document.cookie = cname+"="+cvalue+"; "+expires;
+}
+
+function getCookie(cname) {
+    var name = cname + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0; i<ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1);
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}
+
+function empty(data)
+{
+  if(typeof(data) == 'number' || typeof(data) == 'boolean')
+  {
+    return false;
+  }
+  if(typeof(data) == 'undefined' || data === null)
+  {
+    return true;
+  }
+  if(typeof(data.length) != 'undefined')
+  {
+    return data.length == 0;
+  }
+  var count = 0;
+  for(var i in data)
+  {
+    if(data.hasOwnProperty(i))
+    {
+      count ++;
+    }
+  }
+  return count == 0;
+}
+
+
+function search() {
+   // extract search criteria
+   var name_criteria = document.getElementById('fullname').innerHTML;
+   var email_criteria = document.getElementById('email').innerHTML
+
+   var get_params = {
+     fullname: name_criteria,
+     email: email_criteria
+   }
+   if (empty(get_params.fullname)) {
+     delete get_params.fullname;
+   }
+   if (empty(get_param.email)) {
+     delete get_params.email;
+   }
+
+   // look for no search criteria given; tell user
+   if (empty(get_params)) {
+     alert("Please specify at least one criteria");
+     return;
+   } 
+
+   $.get("/search", get_params, function(results) {
+          if (empty(results)) {
+              document.getElementById('results').style.display = 'none';
+              document.getElementById('nothing').style.display = 'block';
+          } else {
+              document.getElementById('results').style.display = 'block';
+              document.getElementById('nothing').style.display = 'none';
+          }
+
+      },
+      "json"
+   );
+
+}
+
+</script>
+
+<style>
+.header-cont {
+    width: 100%;
+    top: 0px;
+    z-index: 999;
+}
+.header {
+    height: 140px;
+    background: #F0F0F0;
+    border: 3px solid #8B2942;
+    width: 960px;
+    margin: 0px auto;
+    text-align: center;
+    font-size: large;
+}
+.content {
+    width: 960px;
+    background: #F0F0F0;
+    border: 3px solid #8B2942;
+    height: 700px;
+    margin: 20px auto;
+    font-size: large;
+}
+#voter {
+    width: 900px;
+    padding-left: 20px;
+}
+table {
+    position: relative;
+    left: 100px;
+}
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+th, td {
+    padding: 5px;
+} 
+.search_div {
+    padding-left: 100px;
+}
+.big-btn {
+    background-color: #8B2942;
+    color: #F0F0F0;
+    float: left;
+    font-size: large;
+    text-align: center;
+    vertical-align: middle;
+    line-height: 30px;       /* the same as your div height */
+    padding: 10px;
+    border-radius: 10px;
+    -moz-border-radius: 10px;
+    -webkit-border-radius: 10px;
+}
+</style>
+
+</head>
+
+<body>
+
+  <div class="header-cont">
+    <div class="header">
+      <h1>Search For Vcotrs</h1>
+      <p>This page to help you find your friends you want to vouch for
+    </div>
+  </div>
+
+  <div class="content">
+    <div id="voter">
+      <p><b>SEARCH</b>
+      <input type="text" name="fullname" id="fullname" maxlength="50" size="50" >
+      <input type="text" name="email" id="email" maxlength="50" size="50" >
+      <div>
+         <p><b>Notes</b>:
+         <ul>
+           <li>If you put something in both fields, it will do an AND; not an OR - i.e. voter would have to satisfy both criteria - name and email;</li>
+         </ul>
+      </div>
+    </div>
+
+    <br>
+
+    <div class="search_div">
+      <button class="big-btn" onclick="search()">Search</button>
+    </div>
+
+    <br>
+
+    <div>
+       <table id="results" style="display:none;">
+         <th>
+           <td>Full Name</td>
+           <td>Email address</td>
+           <td>Certify</td>
+         </th>
+       </table>
+       <div id="nothing" style="display:none;">
+         <p>Nothing found! Try a new search criteria
+       </div>
+
+    </div>
+
+  </div>
+
+
+  <script>
+    $(document).ready(function() {
+
+      // VOTER 
+      var voter_id = getUrlParameters("id", "", true);
+      if (voter_id) {
+         $.get("/voter/" + voter_id, function(data) {
+            var empty = " ";
+            console.log("voter " + voter_id + " is " + data.name);
+            document.getElementById('user_id').innerHTML = voter_id;
+            document.getElementById('fullname').innerHTML = data.name;
+            document.getElementById('email').innerHTML = data.email;
+            var fbHTML = buildFacebook(data.facebook == undefined ? empty : data.facebook + empty);
+            document.getElementById('facebook').innerHTML = fbHTML;
+            var twitterHTML = buildTwitter(data.twitter == undefined ? empty : data.twitter + empty);
+            document.getElementById('twitter').innerHTML = twitterHTML;
+            document.getElementById('certified').innerHTML = (data.certified == true ? "YES" : "not yet");
+            document.getElementById('vouchers').innerHTML = data.vouchers;
+            document.getElementById('master').innerHTML = (data.master == true ? "YES" : "no");
+
+            // switch some text ON / OFF
+            document.getElementById('notfound').style.display = 'none';
+            document.getElementById('comeone').style.display = 'block';
+         })
+         .fail(function( jqXHR, textStatus, errorThrown ) {
+            document.getElementById('user_id').innerHTML = '<p style="color:red">' + voter_id;
+            document.getElementById('notfound').style.display = 'block';
+            document.getElementById('someone').style.display = 'none';
+            document.getElementById('someone').innerHTML = "Could not find your voter. Please check the search page.<br><p>" + jqXHR.responseText;
+         });
+      }
+
+
+    });
+
+  </script>
+
+</body>
+
+</html>
+
