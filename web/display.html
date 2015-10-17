@@ -33,26 +33,29 @@ function getCookie(cname) {
 function getUrlParameters(parameter, staticURL, decode){
    /*
     Function: getUrlParameters
-    Description: Get the value of URL parameters either from 
+    Description: Get the value of URL parameters either from
                  current URL or static URL
     Author: Tirumal
     URL: www.code-tricks.com
    */
-   var currLocation = (staticURL.length)? staticURL : window.location.search,
-       parArr = currLocation.split("?")[1].split("&"),
-       returnBool = true;
-   
+   var currLocation = (staticURL.length)? staticURL : window.location.search;
+   if (currLocation.indexOf("?") < 0) {
+      return false;
+   }
+   var parArr = currLocation.split("?")[1].split("&");
+   var returnBool = true;
+
    for(var i = 0; i < parArr.length; i++){
         parr = parArr[i].split("=");
         if(parr[0] == parameter){
             return (decode) ? decodeURIComponent(parr[1]) : parr[1];
             returnBool = true;
         }else{
-            returnBool = false;            
+            returnBool = false;
         }
    }
-   
-   if(!returnBool) return false;  
+
+   if(!returnBool) return false;
 }
 
 function buildFacebook(fbName) {
@@ -91,6 +94,31 @@ function buildTwitter(handle) {
       handle = handle.substr(12);
    }
    return '<a href="https://www.twitter.com/' + handle + '">' + handle + "</a>";
+}
+
+function empty(data)
+{
+  if(typeof(data) == 'number' || typeof(data) == 'boolean')
+  {
+    return false;
+  }
+  if(typeof(data) == 'undefined' || data === null)
+  {
+    return true;
+  }
+  if(typeof(data.length) != 'undefined')
+  {
+    return data.length == 0;
+  }
+  var count = 0;
+  for(var i in data)
+  {
+    if(data.hasOwnProperty(i))
+    {
+      count ++;
+    }
+  }
+  return count == 0;
 }
 </script>
 
@@ -148,6 +176,16 @@ th, td {
     -moz-border-radius: 10px;
     -webkit-border-radius: 10px;
 }
+#votertitle {
+    float: left;
+    width: 200px;
+}
+#missingid {
+    float: right;
+    margin-right: 200px;
+    color: red;
+    display: none;
+}
 </style>
 
 </head>
@@ -164,7 +202,12 @@ th, td {
   <div class="content">
 
     <div id="voter">
-      <p><b>VOTER</b>
+      <div id="votertitle">
+        <p><b>VOTER</b>
+      </div>
+      <div id="missingid">
+      </div>
+      <br>
       <p id="someone">someone who is registered in our system
       <p id="notfound" style="display: none">could not find your voter. Please check the search page.
       <table>
@@ -204,6 +247,28 @@ th, td {
 
       // VOTER 
       var voter_id = getUrlParameters("id", "", true);
+      var user_id = getCookie("user_id"); 
+      if (empty(voter_id) || voter_id == false) {
+          if (empty(user_id)) {
+             // we were not given an id via URL; and, none can be found via cookies... no idea!?
+             document.getElementById('missingid').innerHTML = '<br><b>missing</b>; maybe you want to <a href="/search.html">search</a> for someone';
+             document.getElementById('missingid').style.display = 'block';
+
+          } else {
+             // we were not given a user to look at via URL; but, we have our own id from cookies!
+             document.getElementById('missingid').innerHTML = '<br><b>YOU</b>; this is your record!'
+             document.getElementById('missingid').style.display = 'block';
+             voter_id = user_id; 
+          }
+      } else {
+        if (voter_id == user_id) {
+             // hey; that's you!
+             document.getElementById('missingid').innerHTML = '<br><b>YOU</b>; this is your record!'
+             document.getElementById('missingid').style.display = 'block';
+        } else {
+             document.getElementById('missingid').style.display = 'none';
+        }
+      }
       if (voter_id) {
          $.get("/voter/" + voter_id, function(data) {
             var empty = " ";
@@ -221,7 +286,7 @@ th, td {
 
             // switch some text ON / OFF
             document.getElementById('notfound').style.display = 'none';
-            document.getElementById('comeone').style.display = 'block';
+            document.getElementById('someone').style.display = 'block';
          })
          .fail(function( jqXHR, textStatus, errorThrown ) {
             document.getElementById('user_id').innerHTML = '<p style="color:red">' + voter_id;
@@ -239,3 +304,5 @@ th, td {
 </body>
 
 </html>
+
+
