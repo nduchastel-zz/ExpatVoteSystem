@@ -159,6 +159,10 @@ exports.createKeysAndVote = function(req, res) {
           // remove vote from object to store in DB.
           delete voter['vote'];
 
+          // add basic stuff
+          voter['vouchers'] = 0;
+          voter['certified'] = false;
+
           // write to DB
           db.collection('voters', function(err, collection) {
              collection.insert(voter, {safe:true}, function(err, result) {
@@ -230,7 +234,7 @@ exports.certify = function(req, res) {
     }
     var guid = json.guid;
     log.debug("GUID is = '" + guid + "' of size = " + guid.length);
-    if (guid.length != 32) {
+    if (guid.length != 36) {
         log.error("invalid guid in json query (guid='" + guid + "')");
         res.status(400).send("invalid guid in json query (guid='" + guid + "')");
         return;
@@ -244,15 +248,20 @@ exports.certify = function(req, res) {
     // check if already vouched: i.e. if respondant already vouched for requestor
     db.collection('links', function(err, collection) {
 
-        collection.findOne(
-            { '_id': respondent_ob_id,
-              'validtor._id': respondent_ob_id }, function(err, link) {
+        var linkQuery = {
+            'target.id' : requestor_id,     // not an ObjectId, but just a text string
+            'validator.id' : respondent_id  // not an ObjectId, but just a text string
+        };
+        log.debug("query to find link is '" + linkQuery + "'");
+        collection.findOne(linkQuery, function(err, link) {
 
             if (err) {
                 log.error("error searching for link: " + err);
                 res.status(500).send("error searching for link '" + respondent_id + "' vouching for '" + requestor_id + "'");
                 return;
             }
+
+            log.info("link row is '" + link + "'");
 
             if (link) {
                 log.info("already have '" + respondent_id + "' vouching for '" + requestor_id + "'");
@@ -286,26 +295,29 @@ exports.certify = function(req, res) {
                       log.info("found respondent '" + respondent.name + "' (" + respondent_id + "); email='" + respondent.email + "'");
 
                       // "encryption" (using GUID since issues with keys) check: is this the real respondent? can this request vouch?
-                      if (respondent.guid.trime().toLowerCase() != guid) {
+                      if (respondent.guid.trim().toLowerCase() != guid) {
                           log.error("encryption error; not authorized to vouch for requestor");
                           res.status(404).send("encryption error; not authorized to vouch for requestor");
                           return;
                       }
+                      log.info("guid (" + guid + ") matches guid for respondent '" + respondent.name + "'");
 
                       // OK; all checks done... NOW ADD a new link!  aka vouch!
                       var link = {
                          "validator" : {
-                            "_id": respondent_id,
+                            "id": respondent_id,       // not an ObjectId; just text string
                             "name": respondent.name,
                             "email": respondent.email
                          },
                          "target" : {
-                            "_id": requestor_id,
+                            "id": requestor_id,        // not an ObjectId; just text string
                             "name": requestor.name,
                             "email": requestor.email
                          },
                          "target" : "canadian expat adult"
                       };
+                      log.info("adding link '" + link + "'");
+
                       db.collection('links', function(err, collection) {
                           collection.insert(link, {safe:true}, function(err, result) {
                               if (err) {
@@ -315,7 +327,30 @@ exports.certify = function(req, res) {
                               }
 
                               log.info("successfully inserted '" + requestor.name + "' vouching for '" + respondent.name + "'");
-                              res.status(200).send();
+
+                              // increment count on REQUESTOR's record
+                              var newVoucherCount = requestor.vouchers + 1;
+
+                              // if VOUCH by MASTER; you are now certified
+                              var newCertifyFlag = requestor.certified;
+                              if (respondent.master == true) {
+                                 newCertifyFlag = true; // could reste to true if already true; but, that's OK
+                                 log.info("changing (possibly) certification for '" + requestor.name + "'; was = " + requestor.certified + " and now will be = " + newCertifyFlag);
+                              }
+
+                              // UPDATE requestor's record in voters table
+                              db.collection('voters', function(err, collection) {
+                                 collection.update({'_id': requestor_ob_id}, {$inc: { vouchers:1}, $set: { certified: newCertifyFlag} }, function(err, requestor) {
+                                    if (err) {
+                                       log.error("ERROR: error updating record for '" + requestor.name + "'");
+                                       res.status(500).send('some unknown server error trying to update voter record');
+                                       return;
+                                    }
+                                    res.status(200).send();
+                                 });
+                              });
+
+
                           }); //   insert
                       }); //       'links' collection
 
