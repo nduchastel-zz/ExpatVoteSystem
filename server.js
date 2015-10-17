@@ -1,6 +1,8 @@
 var express = require('express'),
     cluster  = require('express-cluster'),
-    vote = require('./routes/vote');
+    vote = require('./routes/vote'),
+    fs = require("fs"),
+    https = require('https');
 
 /**
  * Initialise log4js first, so we don't miss any log messages
@@ -25,10 +27,11 @@ cluster(function() {
 
    app.use(express.static(__dirname + '/web'));
 
-   var server = app.listen(80, function () {
-     var host = server.address().address;
-     var port = server.address().port;
+   var options = {
+     key: fs.readFileSync('expatvote.key'),
+     cert: fs.readFileSync('expatvote.cert')
+   };
 
-     logger.info('listening at http://%s:%s', host, port);
-   });
+   https.createServer(options, app).listen(8443);
+
 });
