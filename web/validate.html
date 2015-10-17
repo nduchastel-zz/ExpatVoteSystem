@@ -123,7 +123,7 @@ body {
     width: 960px;
     background: #F0F0F0;
     border: 3px solid #8B2942;
-    height: 1100px;
+    height: 900px;
     margin: 20px auto;
     font-size: large;
 }
@@ -215,9 +215,6 @@ th, td {
       <tr> <td><b>Facebook</b></td><td id="me_facebook"></td> </tr>
       <tr> <td><b>Twitter</b></td><td id="me_twitter"></td> </tr>
       <table>
-      <p><b>Your Private Key</b>
-      <br>
-      <textarea rows="10" cols="175" id="private_key" class="pkey"></textarea>
       <p>What you are certifying
       <br>
       <div class="assertion">
@@ -283,7 +280,6 @@ th, td {
             document.getElementById('me_facebook').innerHTML = fbHTML;
             var twitterHTML = buildTwitter(data.twitter == undefined ? empty : data.twitter + empty);
             document.getElementById('me_twitter').innerHTML =  twitterHTML;
-            document.getElementById('private_key').innerHTML = getCookie("private_key");
          });
       }
 
