@@ -225,9 +225,11 @@ th, td {
   <script>
 
     function certify() {
+        var guid = getCookie("guid");
         var voucher = {
             'respondent_id': document.getElementById('me_user_id').innerHTML,
-            'guarantee': 'Canadian Expat Adult'
+            'guarantee': 'Canadian Expat Adult',
+            'guid': guid
         };
         var requestor_id = document.getElementById("user_id").innerHTML;
         var json = JSON.stringify(voucher);
