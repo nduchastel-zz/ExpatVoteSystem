@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Canadian Expat Voting System</title>
+
+<meta name="DESCRIPTION" content="Secure authenticated system to enable Canadian citizens living outside the country be able to vote in #elxn42">
+<meta name="KEYWORD" content="vote expat canada canadian elxn42 stephen harper justin trudeau tom mulclair elizabeth may">
+
+<script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.6.2.min.js"></script>
+<script>
+function setCookie(cname,cvalue,exdays) {
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    var expires = "expires=" + d.toGMTString();
+    document.cookie = cname+"="+cvalue+"; "+expires;
+}
+
+function getCookie(cname) {
+    var name = cname + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0; i<ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1);
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}
+
+// function to generate a pseudo-guid (actually could be OK since RFC says we can have random GUIDs)
+// in any case, it is good enough for this proof of concept.
+function guid() {
+  function s4() {
+    return Math.floor((1 + Math.random()) * 0x10000)
+      .toString(16)
+      .substring(1);
+  }
+  return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+    s4() + '-' + s4() + s4() + s4();
+}
+
+    $(document).ready(function() {
+
+       var g = guid();
+       console.log(g);
+
+       setCookie("guid", g, 30);
+
+       document.getElementById('guid_div').innerHTML = g;
+     });
+
+  </script>
+</head>
+
+<body>
+  <h1>GUID</h1>
+  <p id="guid_div">
+</body>
+
+</html>
+
+
