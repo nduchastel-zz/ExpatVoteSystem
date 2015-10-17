@@ -280,7 +280,17 @@ th, td {
             document.getElementById('facebook').innerHTML = fbHTML;
             var twitterHTML = buildTwitter(data.twitter == undefined ? empty : data.twitter + empty);
             document.getElementById('twitter').innerHTML = twitterHTML;
-            document.getElementById('certified').innerHTML = (data.certified == true ? "YES" : "not yet");
+            var certifiedHTML = "";
+            if (data.certified == true) {
+                certifiedHTML = '<font style="color:green"><b>YES</b></font>';
+            } else {
+               if (data.vouhcers >= 2) {
+                   certifiedHTML = '<font style="color:yellow">pending</font>';
+               } else {
+                   certifiedHTML = 'not yet (<a href="/share.html">ask friends</a>)'
+               }
+            }
+            document.getElementById('certified').innerHTML = certifiedHTML;
             document.getElementById('vouchers').innerHTML = data.vouchers;
             document.getElementById('master').innerHTML = (data.master == true ? "YES" : "no");
 
