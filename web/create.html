@@ -87,8 +87,7 @@ body {
 }
 .results p {
     padding-left: 30px;
-    font-size: x-small;
-    word-wrap: break-word;
+    font-size: large;
 }
 .personal {
     width: 400px;
@@ -154,21 +153,9 @@ body {
   <div class="output">
     <div class="results">
       <div>
-        <h3>Public Key</h3>
-        <p id="public_key"></p>
-      </div>
-      <br>
-
-      <div>
-         <h3>Private Key</h3>
-         <p id="private_key"> </p>
-      </div>
-      <br>
-      <p style="font-size: medium">Make sure to keep track of your public and private keys (e.g. cut+paste them into a text file).
-
-      <div>
-         <h3>Your Vote, Encrypted</h3>
+         <h3>Your Vote</h3>
          <p id="evote"></p>
+         <p style="font-size:small">just here to double check; browse to another web page when done.
       </div>
     </div>
   </div>
@@ -188,8 +175,6 @@ body {
             document.getElementById('twitter').value = (data.twitter == undefined ? empty : data.twitter + empty);
             var option = document.createElement("option");  option.text ="HIDDEN";
             $('#party').add(option);
-            document.getElementById('public_key').innerHTML = data.public_key;
-            document.getElementById('private_key').innerHTML = getCookie("private_key");
             document.getElementById('evote').innerHTML = "<hidden>";
             $('#fullname').prop("disabled", true);
             $('#email').prop("disabled", true);
@@ -222,8 +207,6 @@ body {
                 json,
                 function( data ) {
                    console.log( data);
-                   document.getElementById('public_key').innerHTML = data.public_key;
-                   document.getElementById('private_key').innerHTML = data.private_key;
                    document.getElementById('evote').innerHTML = data.check_vote;
                    setCookie("user_id", data.insertedIds[0], 30);
                    setCookie("private_key", data.private_key, 30);
