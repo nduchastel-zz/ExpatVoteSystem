@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>See Specific Voter</title>
+
+<meta name="DESCRIPTION" content="Secure authenticated system to enable Canadian citizens living outside the country be able to vote in #elxn42">
+<meta name="KEYWORD" content="vote expat canada canadian elxn42 stephen harper justin trudeau tom mulclair elizabeth may">
+
+<script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.6.2.min.js"></script>
+<script>
+function setCookie(cname,cvalue,exdays) {
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    var expires = "expires=" + d.toGMTString();
+    document.cookie = cname+"="+cvalue+"; "+expires;
+}
+
+function getCookie(cname) {
+    var name = cname + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0; i<ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1);
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}
+
+function getUrlParameters(parameter, staticURL, decode){
+   /*
+    Function: getUrlParameters
+    Description: Get the value of URL parameters either from
+                 current URL or static URL
+    Author: Tirumal
+    URL: www.code-tricks.com
+   */
+   var currLocation = (staticURL.length)? staticURL : window.location.search;
+   if (currLocation.indexOf("?") < 0) {
+      return false;
+   }
+   var parArr = currLocation.split("?")[1].split("&");
+   var returnBool = true;
+
+   for(var i = 0; i < parArr.length; i++){
+        parr = parArr[i].split("=");
+        if(parr[0] == parameter){
+            return (decode) ? decodeURIComponent(parr[1]) : parr[1];
+            returnBool = true;
+        }else{
+            returnBool = false;
+        }
+   }
+
+   if(!returnBool) return false;
+}
+
+function buildFacebook(fbName) {
+   if (fbName.length < 0) {
+      return;
+   }
+   fbName = fbName.toLocaleLowerCase();
+   if (fbName.substr(0, 8) == "https://") {
+     fbName = fbName.substr(8);
+   } else if (fbName.substr(0,7) == "http://") {
+     fbName = fbName.substr(7);
+   }
+   if (fbName.substr(0,3) == "www") {
+      fbName = fbName.substr(3);
+   }
+   if (fbName.substr(0,13) == "facebook.com/") {
+      fbName = fbName.substr(13);
+   }
+   return '<a href="https://www.facebook.com/' + fbName + '">' + fbName + "</a>";
+}
+
+function buildTwitter(handle) {
+   if (handle.length < 0) {
+      return;
+   }
+   handle = handle.toLocaleLowerCase();
+   if (handle.substr(0, 8) == "https://") {
+     handle = handle.substr(8);
+   } else if (handle.substr(0,7) == "http://") {
+     handle = handle.substr(7);
+   }
+   if (handle.substr(0,3) == "www") {
+      handle = handle.substr(3);
+   }
+   if (handle.substr(0,12) == "twitter.com/") {
+      handle = handle.substr(12);
+   }
+   return '<a href="https://www.twitter.com/' + handle + '">' + handle + "</a>";
+}
+
+function empty(data)
+{
+  if(typeof(data) == 'number' || typeof(data) == 'boolean')
+  {
+    return false;
+  }
+  if(typeof(data) == 'undefined' || data === null)
+  {
+    return true;
+  }
+  if(typeof(data.length) != 'undefined')
+  {
+    return data.length == 0;
+  }
+  var count = 0;
+  for(var i in data)
+  {
+    if(data.hasOwnProperty(i))
+    {
+      count ++;
+    }
+  }
+  return count == 0;
+}
+</script>
+
+<style>
+.header-cont {
+    width: 100%;
+    top: 0px;
+    z-index: 999;
+}
+.header {
+    height: 140px;
+    background: #F0F0F0;
+    border: 3px solid #8B2942;
+    width: 960px;
+    margin: 0px auto;
+    text-align: center;
+    font-size: large;
+}
+.content {
+    width: 960px;
+    background: #F0F0F0;
+    border: 3px solid #8B2942;
+    height: 700px;
+    margin: 20px auto;
+    font-size: large;
+}
+#voter {
+    width: 900px;
+    padding-left: 20px;
+}
+.notes {
+    width: 960px;
+    background: #F0F0F0;
+    border: 3px solid #8B2942;
+    height: 300px;
+    margin: 20px auto;
+    position: relative;
+    left: -20px;
+    font-size: large;
+}
+#notedetails {
+    width: 900px;
+    padding-left: 20px;
+}
+#notfound {
+    color: red;
+    font-weight: bold;
+}
+table {
+    position: relative;
+    left: 100px;
+}
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+th, td {
+    padding: 5px;
+} 
+.assertion {
+    padding-left: 100px;
+}
+.big-btn {
+    background-color: #8B2942;
+    color: #F0F0F0;
+    float: left;
+    font-size: large;
+    text-align: center;
+    vertical-align: middle;
+    line-height: 30px;       /* the same as your div height */
+    padding: 10px;
+    border-radius: 10px;
+    -moz-border-radius: 10px;
+    -webkit-border-radius: 10px;
+}
+#votertitle {
+    float: left;
+    width: 200px;
+}
+#share {
+    font-size: large;
+}
+</style>
+
+</head>
+
+<body>
+
+  <div class="header-cont">
+    <div class="header">
+      <h1>Expat Voting System</h1>
+      <p>Share with your friends and ask them to vouch for you as an elector
+    </div>
+  </div>
+
+  <div class="content">
+    <div id="voter">
+      <div id="votertitle">
+        <p><b>VOTER</b> (aka you!)
+      </div>
+      <br>
+      <p id="notfound" style="display: none">could not find your voter info. Maybe you need to <a href="/create.html">create a profile?</a>
+      <table>
+        <tr> <td><b>ID</b></td><td id="user_id"></td> </tr>
+        <tr> <td><b>Name</b></td><td id="fullname"></td> </tr>
+        <tr> <td><b>Email</b></td><td id="email"></td> </tr>
+        <tr> <td><b>Facebook</b></td><td id="facebook"></td> </tr>
+        <tr> <td><b>Twitter</b></td><td id="twitter"></td> </tr>
+        <tr> <td><b>Certified yet?</b></td><td id="certified"></td> </tr>
+        <tr> <td><b>Number vouchers</b></td><td id="vouchers"></td> </tr>
+        <tr> <td><b>Master Voter?</b></td><td id="master"></td> </tr>
+      <table>
+      <div id="asktovouch">
+         <p><b>You now have a profile</b> (and you probably 'voted' in our system), <b>BUT</b>, your vote won't count until you are certified.
+         <p><b>Now</b>, get your friends to <b>vouch</b> for you:
+         <ul> 
+            <li><div id="share">Share this personal link, just for you:</div></li>
+            <li>Ask them to go to that link, check your information:
+                <ul>
+                   <li>The can check your full name</li>
+                   <li>Validate that this is your email address</li>
+                   <li>Check your Facebook page</li>
+                   <li>Check your Twitter account</li>
+                </ul>
+             </li>
+             <li>Ideally, share this link via one of these item above (Facebook, Twitter or email); that way, they know that it is really you and not someone else claiming to be you;</li>
+             <li>You could even call them on the phone and tell them: "</i>Hey X, I just sent you an email / FB Messenger / Tweet. Go check it out and please vouch for me. Also, register and vote!</i>"</li>
+         </ul>
+         <br>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <div id="notedetails">
+       <p>In a normal governmental type voting system, we would register by showing proof of citizenship such as a passport or birth certificate; or something with some picture ID. In this case, since this is not a real system (i.e just a prototype); aka it isn't done by the government, we use a 'web of trust':
+       <ul>
+         <li>Each person needs to get checked or validated by at least 2 people;</li>
+         <li>Also, there needs to be a link to a 'master' certifier - aka the owner of the web site
+           <p>In a real system, this would be 'Elections Canada'; but, here, it is me, Nicolas Duchastel de Montrouge;
+           <p>I might add a few other 'master' certifier;
+           <p>The people who are 'master' certifier can directly guarantee people by checking their passports etc...; but, mainly, the are the start of the 'web of trust' - i.e. the system fully trust them (it's an approximation);
+          </li>
+       </ul>
+    </div>
+  </div>
+
+
+  <script>
+
+    $(document).ready(function() {
+
+      // VOTER 
+      var user_id = getCookie("user_id"); 
+      if (empty(user_id) || user_id == false) {
+         document.getElementById('notfound').style.display = 'block';
+          alert("this page doesn't work if you do not have an account");
+          return;
+      }
+
+      var voter_id = user_id;
+
+      $.get("/voter/" + voter_id, function(data) {
+         var empty = " ";
+         console.log("voter " + voter_id + " is " + data.name);
+         document.getElementById('user_id').innerHTML = voter_id;
+         document.getElementById('fullname').innerHTML = data.name;
+         document.getElementById('email').innerHTML = data.email;
+         var fbHTML = buildFacebook(data.facebook == undefined ? empty : data.facebook + empty);
+         document.getElementById('facebook').innerHTML = fbHTML;
+         var twitterHTML = buildTwitter(data.twitter == undefined ? empty : data.twitter + empty);
+         document.getElementById('twitter').innerHTML = twitterHTML;
+         var certifiedHTML = "";
+         if (data.certified == true) {
+             certifiedHTML = '<font style="color:green"><b>YES</b></font>';
+         } else {
+            if (data.vouhcers >= 2) {
+                certifiedHTML = '<font style="color:yellow">pending</font>';
+            } else {
+                certifiedHTML = 'not yet (ask friends)'
+            }
+         }
+         document.getElementById('certified').innerHTML = certifiedHTML;
+         document.getElementById('vouchers').innerHTML = data.vouchers;
+         document.getElementById('master').innerHTML = (data.master == true ? "YES" : "no");
+         document.getElementById('share').innerHTML = '<b>Share</b> this personal link, with your friends:<p><font color="#8B2942">http://www.expatvote.ca/validate.html?id=' + voter_id +"</font>";
+
+         // switch some text ON / OFF
+         document.getElementById('notfound').style.display = 'none';
+      })
+      .fail(function( jqXHR, textStatus, errorThrown ) {
+         document.getElementById('user_id').innerHTML = '<p style="color:red">' + voter_id;
+         document.getElementById('notfound').style.display = 'block';
+      });
+
+   });
+
+  </script>
+
+</body>
+
+</html>
+
+
