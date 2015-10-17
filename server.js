@@ -2,6 +2,7 @@ var express = require('express'),
     cluster  = require('express-cluster'),
     vote = require('./routes/vote'),
     fs = require("fs"),
+    http = require("http"),
     https = require('https');
 
 /**
@@ -33,5 +34,12 @@ cluster(function() {
    };
 
    https.createServer(options, app).listen(8443);
+
+   http.createServer(function(req, res){
+      res.writeHead(301, {
+       "location" : "https://expatvote.ca"
+      });
+      res.end();
+   }).listen(8080);
 
 });
