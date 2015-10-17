@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>e-Vote System</title>
+
+<meta name="DESCRIPTION" content="Secure authenticated system to enable Canadian citizens living outside the country be able to vote in #elxn42">
+<meta name="KEYWORD" content="vote expat canada canadian elxn42 stephen harper justin trudeau tom mulclair elizabeth may">
+
+<script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.6.2.min.js"></script>
+<script>
+function setCookie(cname,cvalue,exdays) {
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    var expires = "expires=" + d.toGMTString();
+    document.cookie = cname+"="+cvalue+"; "+expires;
+}
+
+function getCookie(cname) {
+    var name = cname + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0; i<ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1);
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}
+
+function getUrlParameters(parameter, staticURL, decode){
+   /*
+    Function: getUrlParameters
+    Description: Get the value of URL parameters either from
+                 current URL or static URL
+    Author: Tirumal
+    URL: www.code-tricks.com
+   */
+   var currLocation = (staticURL.length)? staticURL : window.location.search;
+   if (currLocation.indexOf("?") < 0) {
+      return false;
+   }
+   var parArr = currLocation.split("?")[1].split("&");
+   var returnBool = true;
+
+   for(var i = 0; i < parArr.length; i++){
+        parr = parArr[i].split("=");
+        if(parr[0] == parameter){
+            return (decode) ? decodeURIComponent(parr[1]) : parr[1];
+            returnBool = true;
+        }else{
+            returnBool = false;
+        }
+   }
+
+   if(!returnBool) return false;
+}
+
+function buildFacebook(fbName) {
+   if (fbName.length < 0) {
+      return;
+   }
+   fbName = fbName.toLocaleLowerCase();
+   if (fbName.substr(0, 8) == "https://") {
+     fbName = fbName.substr(8);
+   } else if (fbName.substr(0,7) == "http://") {
+     fbName = fbName.substr(7);
+   }
+   if (fbName.substr(0,3) == "www") {
+      fbName = fbName.substr(3);
+   }
+   if (fbName.substr(0,13) == "facebook.com/") {
+      fbName = fbName.substr(13);
+   }
+   return '<a href="https://www.facebook.com/' + fbName + '">' + fbName + "</a>";
+}
+
+function buildTwitter(handle) {
+   if (handle.length < 0) {
+      return;
+   }
+   handle = handle.toLocaleLowerCase();
+   if (handle.substr(0, 8) == "https://") {
+     handle = handle.substr(8);
+   } else if (handle.substr(0,7) == "http://") {
+     handle = handle.substr(7);
+   }
+   if (handle.substr(0,3) == "www") {
+      handle = handle.substr(3);
+   }
+   if (handle.substr(0,12) == "twitter.com/") {
+      handle = handle.substr(12);
+   }
+   return '<a href="https://www.twitter.com/' + handle + '">' + handle + "</a>";
+}
+
+function empty(data)
+{
+  if(typeof(data) == 'number' || typeof(data) == 'boolean')
+  {
+    return false;
+  }
+  if(typeof(data) == 'undefined' || data === null)
+  {
+    return true;
+  }
+  if(typeof(data.length) != 'undefined')
+  {
+    return data.length == 0;
+  }
+  var count = 0;
+  for(var i in data)
+  {
+    if(data.hasOwnProperty(i))
+    {
+      count ++;
+    }
+  }
+  return count == 0;
+}
+</script>
+
+<style>
+body{
+    margin:0px;
+    background:#000;
+    background: #8B2942 url('images/world.jpg') top center;
+    background-repeat: repeat-y;
+}
+.header-cont {
+    width: 100%;
+    top: 0px;
+    z-index: 999;
+}
+.header {
+    height: 140px;
+    background: #F0F0F0;
+    border: 3px solid #8B2942;
+    width: 960px;
+    margin: 0px auto;
+    text-align: center;
+    font-size: large;
+}
+.content {
+    width: 960px;
+    background: #F0F0F0;
+    border: 3px solid #8B2942;
+    height: 330px;
+    margin: 20px auto;
+    font-size: large;
+}
+.inside {
+    width: 900px;
+    padding-left: 20px; 
+}
+.details {
+    width: 960px;
+    background: #F0F0F0;
+    border: 3px solid #8B2942;
+    height: 930px;
+    margin: 20px auto;
+    font-size: large;
+}
+table {
+     padding: 5px;
+     border-spacing: 10px;
+}
+</style>
+
+</head>
+
+<body>
+
+  <div class="header-cont">
+    <div class="header">
+      <h1>Expat Voting System</h1>
+      <p>Prototype to show how all Canadians could vote
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="inside">
+       <h1>Each voter is represnted by a profile</h1>
+       <table>
+          <tr>
+             <td style="font-size:x-large; background-color:lightgreen"><a href="/create.html">Create</a></td>
+             <td>  </td>
+             <td style="font-size:x-large; background-color:lightgreen"><a href="/display.html">Display</a></td>
+             <td>  </td>
+             <td style="font-size:x-large; background-color:lightgreen"><a href="/search.html">Search</a></td>
+          </tr>
+       </table>
+      <br>
+      <div style="font-size:large">
+         <p>The goal is to <b>first</b> create a profile for yourself. Part of creation will ask you to vote.
+         <p>Then, <b>second</b>, share with at least 2 friends to have them vouch that you are an adult Canadian expat.
+         <p>At the end of election day, our system will tabulate and all certified votes will be counted.
+      </div>
+    </div>
+  </div>
+
+  <div class="details">
+    <div class="inside">
+      <h2>Goal</h2>
+      <ul>
+        <li>Empower Canadians all around the world who can't vote because of the 5 years rule;</li>
+        <li>Make it easy for people to vote - actually sacrificing security for ease (see Security);</li>
+        <li>Simulate a 'national' vote - really more like a poll; but, it's an example;</li>
+        <li>Show that if someone can do this in 2 week-ends, Elections Canada could do this for real in a few months;</li>
+        <li>Do not store any personal information (Social Insurance Number, date of birth, passport numnber,...);
+      </ul>
+
+      <br>
+      <h2>How It Works</h2>
+      <ul>
+        <li>Each elector is given a profile with basic 'public' information - name, Facebook, Twitter,...</li>
+        <li>Each elector gets a GUID (unique long id) which is stored locally on their browser (using cookies);</li>
+        <li>Electors vouch for each other - that's the way we know that we have 'real' people voting;</li>
+        <li>To be a valid elector, aka a voter certified to have their vote counted, an elector needs:
+           <ul>
+              <li>two distinct people to vouch for them; AND,<li>
+              <li>have at least one 'link' to the master record (e.g. "someone who knows someones who knows someone who... the 'master record'").</li>
+           <ul>
+           <p>OR; have been vouched directly by a 'master elector'.
+        </li>  
+      </ul>
+      <p><b>What's a 'master elector'?</b>
+      <p>In a real e-Vote system, there would be a way to get certified; aka validated as a real elector (or voter). But, we can't -- since we are not Elections Canada or any official government agency (<b>this is not an official programme by the Canadian government</b>). The solution is to have people self certify. But, in that situation, a couple 'fake' could self-certify and add extra votes which should not occur. The solution is to make sure that each person can be 'indirectly' validate by someone we fully trust - that's the 'master elector'.
+      <p>This does not mean that every single person needs to be certified by a 'master elector' but rather there must be a 'path' from the master elector to that person using the 'link' (where a 'link' is a relationship that person A vouches person B).
+      <p>At first, I (Nicolas) will be the only 'master' elector; but, we should add more.
+      <p>Since a 'master elector' can directly certify anyone; that person needs to take extra step - e.g. call the person, have them send them a copy of their passport - or whatever they seem fit to make sure that the person requesting to be certify is actually a Canadian Expat.
+    <div>
+  <div>
+
+
+
+</body>
+
+</html>
+
+
