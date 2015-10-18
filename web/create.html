@@ -198,12 +198,13 @@ body {
       });
       $('#submit').click(function() {
 
+        var myGuid = guid();
         var voterinfo = {
             'name': $('#fullname').val(),
             'email': $('#email').val(),
             'facebook': $('#facebook').val(),
             'twitter': $('#switter').val(),
-            'guid': guid(),
+            'guid': myGuid,
             'vote' : {
                 'party': $('#party').val()
             }
@@ -217,7 +218,7 @@ body {
                    document.getElementById('evote').innerHTML = data.check_vote;
                    setCookie("user_id", data.insertedIds[0], 30);
                    setCookie("private_key", data.private_key, 30);
-                   setCookie("guid", data.guid, 30);
+                   setCookie("guid", myGuid, 30);
                    $('#fullname').prop("disabled", true);
                    $('#email').prop("disabled", true);
                    $('#facebook').prop("disabled", true);
