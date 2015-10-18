@@ -102,16 +102,16 @@ function doSomeSearching() {
      fullname: name_criteria,
      email: email_criteria
    }
-   if (empty(get_params.fullname)) {
+   if (empty(get_params.fullname) || get_params.fullname.length < 4) {
      delete get_params.fullname;
    }
-   if (empty(get_params.email)) {
+   if (empty(get_params.email) || get_params.email.length < 4) {
      delete get_params.email;
    }
 
    // look for no search criteria given; tell user
    if (empty(get_params)) {
-     alert("Please specify at least one criteria");
+     alert("Please specify at least one criteria (needs to be at least 4 letters)");
      return;
    } 
 
@@ -128,8 +128,6 @@ function doSomeSearching() {
           var row = "";
           $.each(results, function(index, item) {
              row += '<tr><td><a href="/display.html?id=' + item._id + '">' + item.name + '</a></td>'
-                 +  '<td><a href="mailto:' + item.email + '?Subject=Can%20you%20vouch%20for%20me%20as%20a%20Canadian%20Expat%3F" target="_top">'
-                 + item.email + '</a></td>'
                  + '<td>';
              if (!empty(item.facebook)) {
                  row += buildFacebook(item.facebook);
@@ -294,7 +292,6 @@ table.gridtable td {
          <thead>
            <tr>
              <th>Full Name</th>
-             <th>Email address</th>
              <th>Facebook</th>
              <th>Twitter</th>
              <th>Certify</th>
