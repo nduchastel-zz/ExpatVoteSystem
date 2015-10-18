@@ -147,7 +147,7 @@ function doSomeSearching() {
              if (item.certified) {
                  row += '<font style="color: green">YES</font></td></tr>';
              } else {
-                 row += '<font style="color: red">no yet</font></td></tr>';
+                 row += '<font style="color: red">not yet</font><p><a href="/validate.html?id=' + item._id + '">Vouch</a> for them</td></tr>';
              }
             });
           $("#voters").html(row); 
