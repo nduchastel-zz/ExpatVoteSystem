@@ -78,7 +78,7 @@ body {
     width: 960px;
     background: #F0F0F0;
     border: 3px solid #8B2942;
-    height: 600px;
+    height: 200px;
     margin: 20px auto;
 }
 .results {
@@ -98,6 +98,9 @@ body {
     width: 200px;
     float: left;
     margin: 20px;
+}
+#share {
+    display: none;
 }
 </style>
 
@@ -157,6 +160,9 @@ body {
          <p id="evote"></p>
          <p style="font-size:small">just here to double check; browse to another web page when done.
       </div>
+      <div id="share">
+        <p>Now, you can share your profile and ask friends to validate it: <a href="/share.html">Share</a>
+      </div>
     </div>
   </div>
 
@@ -183,6 +189,7 @@ body {
             $('#party').prop("disabled", true);
             $('#submit').prop( "disabled", true );
             document.getElementById('clear').style.display = "inline";
+            document.getElementById('share').style.display = "block";
          });
       }
 
@@ -218,9 +225,10 @@ body {
                    $('#party').prop("disabled", true);
                    $('#submit').prop( "disabled", true );
                    document.getElementById('clear').style.display = "inline";
+                   document.getElementById('share').style.display = "block";
                 }, "json")
         .fail(function( jqXHR, textStatus, errorThrown ) {
-            alert("Error processing REST request: '" + textStatus + "'");
+            alert("Error processing REST request: '" + errorThrown + ": " + jqXHR.responseText + "'");
           });
       });
 
