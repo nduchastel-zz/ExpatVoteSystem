@@ -135,7 +135,7 @@ body{
     z-index: 999;
 }
 .header {
-    height: 140px;
+    height: 150px;
     background: #F0F0F0;
     border: 3px solid #8B2942;
     width: 960px;
@@ -155,15 +155,15 @@ body{
     width: 900px;
     padding-left: 20px;
 }
-table {
+.content table {
     position: relative;
     left: 100px;
 }
-table, th, td {
+.content table, th, td {
     border: 1px solid black;
     border-collapse: collapse;
 }
-th, td {
+.content th, td {
     padding: 5px;
 } 
 .assertion {
@@ -200,8 +200,19 @@ th, td {
 
   <div class="header-cont">
     <div class="header">
-      <h1>Expat Voting System</h1>
+      <h2>Expat Voting System</h2>
       <p>This page used to see details about a specific voter registered in our system
+       <table style="margin: 0 auto; border:none">
+          <tr>
+             <td style="font-size:small; background-color:lightgreen; border:none"><a href="/create.html">Create</a></td>
+             <td style="border:none">  </td>
+             <td style="font-size:small; background-color:lightgreen; border:none"><a href="/display.html">Display</a></td>
+             <td style="border:none">  </td>
+             <td style="font-size:small; background-color:lightgreen; border:none"><a href="/search.html">Search</a></td>
+             <td style="border:none">  </td>
+             <td style="font-size:small; background-color:lightgreen; border:none"><a href="/share.html">Get Certified as Voter</a></td>
+          </tr>
+       </table>
     </div>
   </div>
 
@@ -293,7 +304,7 @@ th, td {
                if (data.vouchers >= 2) {
                    certifiedHTML = '<font style="color:yellow">pending</font>';
                } else {
-                   certifiedHTML = 'not yet (<a href="/share.html">ask friends</a>)'
+                   certifiedHTML = '<font style="color:red">not yet</font> (<a href="/validate.html?id=' + voter_id + '">Vouch for them</a>)';
                }
             }
             document.getElementById('certified').innerHTML = certifiedHTML;
