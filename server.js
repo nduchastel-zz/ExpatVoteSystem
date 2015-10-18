@@ -29,6 +29,7 @@ cluster(function() {
    app.use(express.static(__dirname + '/web'));
 
    var options = {
+     ca: fs.readFileSync('gd_bundle-g2-g1.crt'),
      key: fs.readFileSync('expatvote.key'),
      cert: fs.readFileSync('expatvote.cert')
    };
