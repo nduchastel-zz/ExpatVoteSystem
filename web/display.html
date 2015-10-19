@@ -275,6 +275,7 @@ body{
       // VOTER 
       var voter_id = getUrlParameters("id", "", true);
       var user_id = getCookie("user_id"); 
+      var guid = getCookie("guid");
       if (empty(voter_id) || voter_id == false) {
           if (empty(user_id)) {
              // we were not given an id via URL; and, none can be found via cookies... no idea!?
@@ -297,42 +298,51 @@ body{
         }
       }
       if (voter_id) {
-         $.get("/voter/" + voter_id, function(data) {
-            var empty = " ";
-            console.log("voter " + voter_id + " is " + data.name);
-            document.getElementById('user_id').innerHTML = voter_id;
-            document.getElementById('fullname').innerHTML = data.name;
-            document.getElementById('email').innerHTML = data.email;
-            var fbHTML = buildFacebook(data.facebook == undefined ? empty : data.facebook + empty);
-            document.getElementById('facebook').innerHTML = fbHTML;
-            var twitterHTML = buildTwitter(data.twitter == undefined ? empty : data.twitter + empty);
-            document.getElementById('twitter').innerHTML = twitterHTML;
-            var certifiedHTML = "";
-            if (data.certified == true) {
-                certifiedHTML = '<font style="color:green"><b>YES</b></font>';
-            } else {
-               if (data.vouchers >= 2) {
-                   certifiedHTML = '<font style="color:yellow">pending</font>';
-               } else {
-                   certifiedHTML = '<font style="color:red">not yet</font> (<a href="/validate.html?id=' + voter_id + '">Vouch for them</a>)';
-               }
-            }
-            document.getElementById('certified').innerHTML = certifiedHTML;
-            document.getElementById('vouchers').innerHTML = data.vouchers;
-            document.getElementById('master').innerHTML = (data.master == true ? "YES" : "no");
+        var json = {
+           'user_id' :  voter_id,
+           'guid' : guid
+        }
+        $.post( "/getVoter",
+                json,
+                function( data ) {
+                   var empty = " ";
+                   console.log("voter " + voter_id + " is " + data.name);
+                   document.getElementById('user_id').innerHTML = voter_id;
+                   document.getElementById('fullname').innerHTML = data.name;
+                   var emailHtml = "";
+                   if (!data.hasOwnProperty('email')) {
+                       emailHtml = "<i>hidden for privacy request</i>";
+                   } else {
+                       emailHtml = data.email;
+                   }
+                   document.getElementById('email').innerHTML = emailHtml;
+                   var fbHTML = buildFacebook(data.facebook == undefined ? empty : data.facebook + empty);
+                   document.getElementById('facebook').innerHTML = fbHTML;
+                   var twitterHTML = buildTwitter(data.twitter == undefined ? empty : data.twitter + empty);
+                   document.getElementById('twitter').innerHTML = twitterHTML;
+                   var certifiedHTML = "";
+                   if (data.certified == true) {
+                       certifiedHTML = '<font style="color:green"><b>YES</b></font>';
+                   } else {
+                      if (data.vouchers >= 2) {
+                          certifiedHTML = '<font style="color:yellow">pending</font>';
+                      } else {
+                          certifiedHTML = '<font style="color:red">not yet</font> (<a href="/validate.html?id=' + voter_id + '">Vouch for them</a>)';
+                      }
+                   }
+                   document.getElementById('certified').innerHTML = certifiedHTML;
+                   document.getElementById('vouchers').innerHTML = data.vouchers;
+                   document.getElementById('master').innerHTML = (data.master == true ? "YES" : "no");
 
-            // switch some text ON / OFF
-            document.getElementById('notfound').style.display = 'none';
-            document.getElementById('someone').style.display = 'block';
-         })
-         .fail(function( jqXHR, textStatus, errorThrown ) {
-            document.getElementById('user_id').innerHTML = '<p style="color:red">' + voter_id;
-            document.getElementById('notfound').style.display = 'block';
-            document.getElementById('someone').style.display = 'none';
-            document.getElementById('someone').innerHTML = "Could not find your voter. Please check the search page.<br><p>" + jqXHR.responseText;
-         });
+                   // switch some text ON / OFF
+                   document.getElementById('notfound').style.display = 'none';
+                   document.getElementById('someone').style.display = 'block';
+                }, "json")
+                .fail(function( jqXHR, textStatus, errorThrown ) {
+                   alert("Error processing REST request: '" + errorThrown + ": " + jqXHR.responseText + "'");
+                });
+
       }
-
 
     });
 
@@ -341,5 +351,3 @@ body{
 </body>
 
 </html>
-
-
