@@ -24,6 +24,7 @@ cluster(function() {
    app.post('/voter', vote.createKeysAndVote);
    app.post('/voter/:id/certify', vote.certify);
    app.get('/voter/:id', vote.fetchVoter);
+   app.post('/getVoter', vote.postToGetVoter);
    app.get('/search', vote.search);
 
    app.use(express.static(__dirname + '/web'));
