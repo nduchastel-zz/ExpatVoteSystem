@@ -109,6 +109,63 @@ body {
 #siteseal{
     float: right;
 }
+#emailprivacy {
+    font-size: x-small;
+    padding-left: 20px;
+}
+[data-tip] {
+	position:relative;
+
+}
+[data-tip]:before {
+	content:'';
+	/* hides the tooltip when not hovered */
+	display:none;
+	content:'';
+	display:none;
+	border-left: 5px solid transparent;
+	border-right: 5px solid transparent;
+	border-bottom: 5px solid #1a1a1a;
+	position:absolute;
+	top:30px;
+	left:35px;
+	z-index:8;
+	font-size:0;
+	line-height:0;
+	width:0;
+	height:0;
+	position:absolute;
+	top:30px;
+	left:35px;
+	z-index:8;
+	font-size:0;
+	line-height:0;
+	width:0;
+	height:0;
+}
+[data-tip]:after {
+	display:none;
+	content:attr(data-tip);
+	position:absolute;
+	top:35px;
+	left:0px;
+	padding:5px 8px;
+	background:#1a1a1a;
+	color:#fff;
+	z-index:9;
+	font-size: 0.75em;
+	height:18px;
+	line-height:18px;
+	-webkit-border-radius: 3px;
+	-moz-border-radius: 3px;
+	border-radius: 3px;
+	white-space:nowrap;
+	word-wrap:normal;
+}
+[data-tip]:hover:before,
+[data-tip]:hover:after {
+	display:block;
+}
 </style>
 
 </head>
@@ -145,6 +202,10 @@ body {
           Email:<br>
           <input type="email" name="email" id="email" maxlength="50" size="50" required placeholder="valid unique email address">
           <br>
+          <div id="emailprivacy" data-tip="keep your email private if you want">
+            <input type="radio" name="privateemail" id="public" value="public"> Public
+            <input type="radio" name="privateemail" id="private" value="private" checked> Hidden
+          </div>
           Facebook:<br>
           <input type="text" name="facebook" id="facebook" maxlength="50" size="50" placeholder="omit 'https://www.facebook/com' part">
           <br>
@@ -156,13 +217,16 @@ body {
         <fieldset class="vote">
           <legend>Vote</legend>
           Party:<br>
+          <div data-tip="select 'Not Voting' if you do not want to vote">
           <select name="party" id="party">
             <option value="none">None of the Above</option>
             <option value="conservative">Conservative</option>
             <option value="green">Green</option>
             <option value="liberal">Liberal</option>
             <option value="ndp">NDP</option>
+            <option value="notvoting">Not Voting</option>
           </select>
+          </div>
           <br>
         </fieldset>
     </form>
@@ -209,6 +273,8 @@ body {
             console.log("get for " + user_id + " is " + data);
             document.getElementById('fullname').value = data.name;
             document.getElementById('email').value = data.email;
+            var privateEmailStatus = data.emailprivacy;
+            document.getElementById(privateEmailStatus).checked = true;
             document.getElementById('facebook').value = (data.facebook == undefined ? empty : data.facebook + empty);
             document.getElementById('twitter').value = (data.twitter == undefined ? empty : data.twitter + empty);
             var option = document.createElement("option");  option.text ="HIDDEN";
@@ -234,6 +300,7 @@ body {
         var voterinfo = {
             'name': $('#fullname').val(),
             'email': $('#email').val(),
+            'emailprivacy': $('input[name="privateemail"]:checked').val(),
             'facebook': $('#facebook').val(),
             'twitter': $('#switter').val(),
             'guid': myGuid,
