@@ -120,6 +120,7 @@ exports.createKeysAndVote = function(req, res) {
             case 'green': 
             case 'liberal': 
             case 'ndp': 
+            case 'notvoting': 
             case 'none':
               break;
             default:
@@ -394,19 +395,108 @@ function empty(data)
   return count == 0;
 }
 
-
+// GET voter info for a specific elector
 exports.fetchVoter = function(req, res) {
     var id = req.params.id;
     var obj_id = new require('mongodb').ObjectID(req.params.id);
     log.info("Retrieving voter: '" + id + "'");
     db.collection('voters', function(err, collection) {
         collection.findOne({'_id': obj_id}, function(err, item) {
-            delete item.encrypted_vote;
+            if (empty(item)) {
+               log.info("did not find voter '" + id + "'");
+               res.status(404).send("cannot find voter");
+               return;
+            }
+            if (item.hasOwnProperty('encrypted_vote')) {
+                delete item.encrypted_vote;
+            }
+            if (item.hasOwnProperty('guid')) {
+                delete item.guid;
+            }
             res.send(item);
         });
     });
 };
 
+
+// POST to get a speific voter
+//   {
+//      "user_id" : "1234567",
+//      "guid" : "1234-5678-09abdef1234-1234-1234"  (optional)
+//   }
+exports.postToGetVoter = function(req, res) {
+    var json = req.body;
+
+    log.info("POST fetch voter '" + JSON.stringify(json) +"'");
+
+    // USER_ID
+    if (!json.hasOwnProperty('user_id')) {
+        log.error('missing user_id in json query');
+        res.status(400).send('missing user_id in json query');
+        return;
+    }
+    var user_id = json.user_id;
+    log.info("user id is " + user_id);
+
+    // GUID
+    var guid = json.guid;
+    if (empty(guid)) {
+       guid = null;
+       log.info("guid not specify; we will block email");
+    } else {
+       log.info("guid specified is " + guid);
+    }
+
+    // fetch the record from the DB
+    var obj_id = new require('mongodb').ObjectID(user_id);
+    log.info("Retrieving voter for post fetch: '" + user_id + "'");
+    db.collection('voters', function(err, collection) {
+        collection.findOne({'_id': obj_id}, function(err, item) {
+            if (empty(item)) {
+               log.info("did not find voter '" + user_id + "'");
+               res.status(404).send("cannot find voter");
+               return;
+            }
+            // make sure to hide the vote 
+            delete item.encrypted_vote;
+
+            // make sure to hide the guid
+            delete item.guid;
+
+            if (guid == null) {
+                if (!item.hasOwnProperty('emailprivacy')) {
+                    // remove email because voter didn't say if privacy email or not; assume privacy!
+                    log.info("no guid; no emailprivacy: assuming voter wanted email privacy '" + user_id + "'");
+                    delete item.email;
+                } else if (item.emailprivacy == true) {
+                    // remove email because voter specifically requested email privacy
+                    log.info("no guid; email privacy requested '" + user_id + "'");
+                    delete item.email;
+                }
+            } else if (guid != item.guid) {
+                if (!item.hasOwnProperty('emailprivacy')) {
+                    // remove email because voter didn't say if privacy email or not; assume privacy!
+                    log.info("guid mismatch: no emailprivacy; assuming voter wanted email privacy '" + user_id + "'");
+                    delete item.email;
+                } else if (item.emailprivacy == true) {
+                    // remove email because voter specifically requested email privacy
+                    log.info("guid mismatch; email privacy requested '" + user_id + "'");
+                    delete item.email;
+                }
+            }
+
+            // so, only way to get email returned is
+            // a) guid matches the one assigned to the voter record;
+            // b) no guid (or not the right guid) and privacy was requested (or not specified - assume privacy)
+
+            res.send(item);
+        });
+    });
+
+};
+
+
+// SEARCH for
 exports.search = function(req, res) {
   var queryData = url.parse(req.url, true).query;
   log.debug("query data is = '" + queryData + "'");
@@ -419,6 +509,13 @@ exports.search = function(req, res) {
   log.debug("email = '" + email + "' is " + (empty(email) ? "empty" : "not_empty"));
   log.debug("facebook = '" + facebook + "' is "  + (empty(facebook) ? "empty" : 'not_empty'));;
   log.debug("twitter = '" + twitter + "' is " + (empty(twitter) ? "empty" : "not_empty"));
+
+  if (!empty(email) && email.length < 4) {
+     email = null; 
+  }
+  if (!empty(fullname) && fullname.length < 4) {
+     fullname = null;
+  }
 
   var query = { };
   if (!empty(fullname)) {
