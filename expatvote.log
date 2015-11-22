@@ -1,0 +1,13 @@
+nohup: ignoring input
+[36m[2015-10-17 15:13:10.090] [DEBUG] vote - [39mabout to connect to mongodb
+
+events.js:72
+        throw er; // Unhandled 'error' event
+              ^
+Error: EACCES, open 'log/access.log'
+[36m[2015-10-17 15:13:10.472] [DEBUG] vote - [39mabout to connect to mongodb
+[36m[2015-10-17 15:13:10.477] [DEBUG] vote - [39mabout to connect to mongodb
+Sat, 17 Oct 2015 22:13:10 GMT connect deprecated multipart: use parser (multiparty, busboy, formidable) npm module instead at node_modules/express/node_modules/connect/lib/middleware/bodyParser.js:56:20
+Sat, 17 Oct 2015 22:13:10 GMT connect deprecated limit: Restrict request size at location of read at node_modules/express/node_modules/connect/lib/middleware/multipart.js:86:15
+Sat, 17 Oct 2015 22:13:10 GMT connect deprecated multipart: use parser (multiparty, busboy, formidable) npm module instead at node_modules/express/node_modules/connect/lib/middleware/bodyParser.js:56:20
+Sat, 17 Oct 2015 22:13:10 GMT connect deprecated limit: Restrict request size at location of read at node_modules/express/node_modules/connect/lib/middleware/multipart.js:86:15
